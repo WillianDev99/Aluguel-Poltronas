@@ -61,17 +61,14 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             '{{CLIENT_CPF}}': client?.cpf || '___.___.___-__',
             '{{CLIENT_RG}}': client?.rg || '__________',
             '{{CLIENT_ADDRESS}}': client ? `${client.street || ''}, ${client.number || ''} - ${client.neighborhood || ''}, ${client.city || ''}/${client.state || ''}` : '___________________________',
-            '{{CLIENT_PHONE}}': client?.phone || '___________________________',
             '{{VEHICLE_MODEL}}': vehicle?.model || '___________________________',
-            '{{VEHICLE_BRAND}}': vehicle?.brand || '___________________________',
             '{{VEHICLE_PLATE}}': vehicle?.plate || '_______',
             '{{VEHICLE_COLOR}}': vehicle?.color || '__________',
             '{{VEHICLE_YEAR}}': vehicle?.year?.toString() || '____',
-            '{{VEHICLE_CATEGORY}}': vehicle?.category || '__________',
-            '{{PICKUP_DATE}}': reservation.pickup_date ? new Date(reservation.pickup_date).toLocaleString('pt-BR') : '__/__/____, __:__',
-            '{{RETURN_DATE}}': reservation.return_date ? new Date(reservation.return_date).toLocaleString('pt-BR') : '__/__/____, __:__',
-            '{{DAYS}}': reservation.days?.toString() || '0',
-            '{{DAILY_RATE}}': money(reservation.daily_rate),
+            '{{PICKUP_DATE}}': reservation.pickup_date ? new Date(reservation.pickup_date).toLocaleDateString('pt-BR') : '__/__/____',
+            '{{PICKUP_TIME}}': reservation.pickup_date ? new Date(reservation.pickup_date).toLocaleTimeString('pt-BR') : '__:__:__',
+            '{{RETURN_DATE}}': reservation.return_date ? new Date(reservation.return_date).toLocaleDateString('pt-BR') : '__/__/____',
+            '{{RETURN_TIME}}': reservation.return_date ? new Date(reservation.return_date).toLocaleTimeString('pt-BR') : '__:__:__',
             '{{TOTAL_VALUE}}': money(reservation.total_value),
             '{{SECURITY_DEPOSIT}}': money(reservation.security_deposit),
             '{{INSURANCE_VALUE}}': money(vehicle?.default_insurance_value || 0),
@@ -86,69 +83,35 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
     };
 
     const getDefaultFallback = () => `
-        <div style="text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 20px;">CONTRATO DE LOCAÇÃO DE VEÍCULOS</div>
+        <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 30px; text-decoration: underline;">CONTRATO DE LOCAÇÃO DE VEÍCULO AUTOMOTOR</div>
         
-        <p><strong>LOCADORA:</strong> MIDAS RENT A CAR, inscrita no CNPJ nº 35.449.945/0001-70, com sede à AVENIDA PREFEITO JAQUES NUNES, 2200, neste ato representada por ________________________________________________.</p>
+        <p><strong>LOCADORA:</strong> MIDAS RENT A CAR LTDA, com sede na Avenida Prefeito Jaques Nunes, nº 2200, Tianguá-CE.</p>
         
-        <p><strong>LOCATÁRIO:</strong> {{CLIENT_NAME}}, portador do CPF {{CLIENT_CPF}} e RG {{CLIENT_RG}}, residente em {{CLIENT_ADDRESS}}, telefone: {{CLIENT_PHONE}}.</p>
+        <p><strong>LOCATÁRIO:</strong> {{CLIENT_NAME}}, portador do CPF {{CLIENT_CPF}} e RG {{CLIENT_RG}}, residente em {{CLIENT_ADDRESS}}.</p>
         
-        <p><strong>CONDUTOR(ES) AUTORIZADO(S):</strong><br>
-        Nome: ________________________________________________ CNH: ________________________<br>
-        Categoria: ______ Validade: ____/____/_______<br>
-        <span style="font-size: 10px;">(Outros condutores somente com autorização expressa da locadora.)</span></p>
+        <p><strong>VEÍCULO:</strong> {{VEHICLE_MODEL}}, Placa {{VEHICLE_PLATE}}, Cor {{VEHICLE_COLOR}}, Ano {{VEHICLE_YEAR}}.</p>
         
-        <div style="font-weight: bold; margin-top: 20px;">CLÁUSULA 1 – DO OBJETO</div>
-        <p>O presente contrato tem por objeto a locação do veículo:<br>
-        Marca/Modelo: {{VEHICLE_BRAND}} / {{VEHICLE_MODEL}}<br>
-        Categoria: {{VEHICLE_CATEGORY}}<br>
-        Placa: {{VEHICLE_PLATE}} &nbsp;&nbsp;&nbsp; Ano/Modelo: {{VEHICLE_YEAR}} &nbsp;&nbsp;&nbsp; Cor: {{VEHICLE_COLOR}}<br>
-        Quilometragem inicial: ________________________ km</p>
+        <p><strong>PERÍODO DE LOCAÇÃO:</strong> O veículo será retirado em {{PICKUP_DATE}}, {{PICKUP_TIME}} e deverá ser devolvido em {{RETURN_DATE}}, {{RETURN_TIME}}.</p>
         
-        <div style="font-weight: bold; margin-top: 20px;">CLÁUSULA 2 – DO PRAZO</div>
-        <p>O prazo de locação será de {{DAYS}} dias, iniciando-se em {{PICKUP_DATE}} e encerrando-se em {{RETURN_DATE}}, podendo ser prorrogado mediante autorização expressa da LOCADORA.</p>
+        <p><strong>VALORES E CAUÇÃO:</strong> O valor total da locação é de {{TOTAL_VALUE}}. O locatário deposita neste ato o valor de {{SECURITY_DEPOSIT}} a título de caução.</p>
         
-        <div style="font-weight: bold; margin-top: 20px;">CLÁUSULA 3 – DO VALOR</div>
-        <p>O valor da locação será de {{DAILY_RATE}} por dia, com limite de 2.000 km durante o prazo de locação que for de 10 até 29 dias, acima disso o limite será de 3.000 km, abaixo de 10 dias não tem limite.<br>
-        Excedente de quilometragem: R$ ____________ por km excedido.<br>
-        O pagamento será realizado 50% do total da locação no ato da reserva e 50% + caução na retirada do veículo.<br>
-        ( ) Dinheiro (espécie)<br>
-        ( ) Cartão de crédito/débito<br>
-        ( ) PIX</p>
+        <p><strong>SEGURO E FRANQUIA:</strong> O veículo possui Seguro Premium incluso. Em caso de sinistro, o locatário arcará com a franquia de {{INSURANCE_VALUE}}.</p>
         
-        <div style="font-weight: bold; margin-top: 20px;">CLÁUSULA 4 – DA CAUÇÃO</div>
-        <p>Será exigida caução no valor de {{SECURITY_DEPOSIT}}, podendo ser realizada por:<br>
-        • Cartão de crédito (pré-autorização)<br>
-        • PIX<br>
-        • Transferência bancária<br>
-        A caução será retida até conferência do veículo e multas.</p>
-        
-        <div style="font-weight: bold; margin-top: 20px;">CLÁUSULA 7 – SEGURO</div>
-        <p>O veículo está segurado com cobertura:<br>
-        • Colisão<br>
-        • Roubo/furto<br>
-        • Danos a terceiros (RCF)<br>
-        • APP (acidentes pessoais de passageiros)<br>
-        Franquia do seguro: {{INSURANCE_VALUE}}<br>
-        Em caso de colisão, qualquer valor inferior à franquia é responsabilidade total do LOCATÁRIO.<br>
-        Roubo ou furto com negligência (ex.: chave no contato, carro destrancado) será responsabilidade integral do LOCATÁRIO.</p>
-        
-        <div style="text-align: center; font-weight: bold; margin-top: 40px; margin-bottom: 30px;">ASSINATURA DAS PARTES</div>
-        
-        <div style="margin-top: 20px;">
-            LOCADORA: MIDAS RENT A CAR<br>
-            Nome: ________________________________________________<br>
-            Data: ____/____/_______
+        <div style="text-align: center; margin-top: 60px; margin-bottom: 60px;">
+            Tianguá-CE, {{CURRENT_DATE}}
         </div>
         
-        <div style="margin-top: 30px;">
-            LOCATÁRIO: {{CLIENT_NAME}}<br>
-            Nome: ________________________________________________<br>
-            Data: ____/____/_______
-        </div>
-        
-        <div style="margin-top: 30px;">
-            CONDUTOR(ES): ________________________________________________<br>
-            Assinatura: ________________________________________________
+        <div style="display: flex; justify-content: space-between; margin-top: 80px; padding: 0 40px;">
+            <div style="text-align: center; width: 45%;">
+                <div style="border-top: 1px solid black; margin-bottom: 5px;"></div>
+                <div style="font-weight: bold; font-size: 11px;">MIDAS RENT A CAR</div>
+                <div style="font-size: 10px;">Locadora</div>
+            </div>
+            <div style="text-align: center; width: 45%;">
+                <div style="border-top: 1px solid black; margin-bottom: 5px;"></div>
+                <div style="font-weight: bold; font-size: 11px;">{{CLIENT_NAME}}</div>
+                <div style="font-size: 10px;">Locatário</div>
+            </div>
         </div>
     `;
 
@@ -183,8 +146,11 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     <head>
                         <title>Contrato Midas - ${client?.name}</title>
                         <style>
-                            body { font-family: serif; padding: 40px; line-height: 1.4; color: #000; font-size: 12px; }
-                            p { margin-bottom: 8px; text-align: justify; }
+                            body { font-family: serif; padding: 40px; line-height: 1.6; color: #000; font-size: 12px; }
+                            p { margin-bottom: 12px; text-align: justify; }
+                            @media print {
+                                body { padding: 0; }
+                            }
                         </style>
                     </head>
                     <body>${content}</body>
