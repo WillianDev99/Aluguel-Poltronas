@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Reservation, ReservationStatus, VehicleChecklist, Client, Vehicle } from '../types';
 import { TableSkeleton } from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditReservationModal from '../components/EditReservationModal';
-import ContractEditorView from './ContractEditorView';
 
-const defaultChecklistItems = ['Lataria', 'Motor', 'Pneus', 'Interior', 'Vidros', 'Acessórios'];
+// Carregamento preguiçoso para evitar que erros no editor quebrem a lista
+const ContractEditorView = React.lazy(() => import('./ContractEditorView'));
 
 const INSPECTION_SLOTS = [
   { id: 'ext_front_1', label: 'Frente 1', group: 'Externo' },
@@ -221,14 +221,18 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
       {processingPickupRes && <PickupModal reservation={processingPickupRes} onClose={() => setProcessingPickupRes(null)} onUpdate={onUpdateReservation} />}
       {processingReturnRes && <ReturnModal reservation={processingReturnRes} onClose={() => setProcessingReturnRes(null)} onUpdate={onUpdateReservation} />}
       {viewingReportRes && <InspectionReportModal reservation={viewingReportRes} onClose={() => setViewingReportRes(null)} />}
-      {editingContractRes && (
-        <ContractEditorView 
-            reservation={editingContractRes} 
-            client={clients.find(c => c.id === editingContractRes.client_id)}
-            vehicle={vehicles.find(v => v.id === editingContractRes.vehicle_id)}
-            onClose={() => setEditingContractRes(null)} 
-        />
-      )}
+      
+      {/* Carregamento seguro do editor de contrato */}
+      <Suspense fallback={<div className="fixed inset-0 z-[120] bg-white/50 flex items-center justify-center"><span className="animate-spin material-symbols-outlined text-4xl text-primary">progress_activity</span></div>}>
+        {editingContractRes && (
+          <ContractEditorView 
+              reservation={editingContractRes} 
+              client={clients.find(c => c.id === editingContractRes.client_id)}
+              vehicle={vehicles.find(v => v.id === editingContractRes.vehicle_id)}
+              onClose={() => setEditingContractRes(null)} 
+          />
+        )}
+      </Suspense>
     </div>
   );
 };
