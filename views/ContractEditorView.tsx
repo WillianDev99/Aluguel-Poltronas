@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import React, { useState, useEffect, useRef } from 'react';
 import { Reservation, Client, Vehicle } from '../types';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -13,66 +11,46 @@ interface ContractEditorViewProps {
 }
 
 const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, client, vehicle, onClose }) => {
-    const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<string[]>([]);
-    const [useSimpleEditor, setUseSimpleEditor] = useState(false);
-
-    const addLog = (msg: string) => {
-        console.log(`[ContractDebug] ${msg}`);
-        setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-    };
+    const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const init = async () => {
-            addLog('Iniciando carregamento do contrato...');
-            addLog(`ID Reserva: ${reservation.id}`);
-            addLog(`Cliente: ${client?.name || 'Não encontrado'}`);
-            addLog(`Veículo: ${vehicle?.model || 'Não encontrado'}`);
-
+        const loadData = async () => {
+            setIsLoading(true);
             try {
-                // 1. Verificar se a tabela existe e buscar contrato salvo
-                addLog('Buscando contrato salvo no banco...');
-                const { data: saved, error: fetchError } = await supabase
+                const { data: savedContract } = await supabase
                     .from('rental_contracts')
                     .select('content')
                     .eq('rental_id', reservation.id)
                     .maybeSingle();
 
-                if (fetchError) {
-                    addLog(`Erro ao buscar: ${fetchError.message}`);
-                    throw fetchError;
-                }
-
-                if (saved?.content) {
-                    addLog('Contrato salvo encontrado. Carregando...');
-                    setContent(saved.content);
+                let initialContent = '';
+                if (savedContract?.content) {
+                    initialContent = savedContract.content;
                 } else {
-                    addLog('Nenhum contrato salvo. Buscando template padrão...');
-                    const { data: template, error: tempError } = await supabase
+                    const { data: template } = await supabase
                         .from('contract_templates')
                         .select('content')
                         .limit(1)
                         .maybeSingle();
 
-                    if (tempError) addLog(`Erro template: ${tempError.message}`);
-
-                    const baseContent = template?.content || getDefaultFallback();
-                    addLog('Processando placeholders...');
-                    setContent(fillPlaceholders(baseContent));
+                    const baseTemplate = template?.content || getDefaultFallback();
+                    initialContent = fillPlaceholders(baseTemplate);
                 }
-            } catch (err: any) {
-                addLog(`FALHA CRÍTICA: ${err.message}`);
-                toast.error('Erro ao carregar dados. Verifique o console.');
-                setContent(fillPlaceholders(getDefaultFallback()));
+
+                if (editorRef.current) {
+                    editorRef.current.innerHTML = initialContent;
+                }
+            } catch (err) {
+                console.error('Erro ao carregar:', err);
+                if (editorRef.current) editorRef.current.innerHTML = fillPlaceholders(getDefaultFallback());
             } finally {
                 setIsLoading(false);
-                addLog('Carregamento finalizado.');
             }
         };
 
-        init();
+        loadData();
     }, [reservation.id]);
 
     const fillPlaceholders = (text: string) => {
@@ -108,81 +86,102 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
         <p><strong>VALOR:</strong> {{TOTAL_VALUE}}</p>
     `;
 
+    const execCommand = (command: string, value?: string) => {
+        document.execCommand(command, false, value);
+    };
+
     const handleSave = async () => {
+        if (!editorRef.current) return;
         setIsSaving(true);
-        addLog('Iniciando salvamento...');
         try {
+            const content = editorRef.current.innerHTML;
             const { error } = await supabase
                 .from('rental_contracts')
                 .upsert({ rental_id: reservation.id, content });
-            
             if (error) throw error;
-            addLog('Salvo com sucesso!');
-            toast.success('Contrato salvo!');
+            toast.success('Contrato salvo com sucesso!');
         } catch (err: any) {
-            addLog(`Erro ao salvar: ${err.message}`);
             toast.error('Erro ao salvar: ' + err.message);
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (isLoading) return (
-        <div className="fixed inset-0 z-[150] bg-white flex flex-col items-center justify-center p-10">
-            <span className="animate-spin material-symbols-outlined text-4xl text-primary mb-4">progress_activity</span>
-            <div className="w-full max-w-md bg-slate-50 p-4 rounded-lg border border-slate-200 font-mono text-[10px] overflow-y-auto max-h-40">
-                {debugInfo.map((log, i) => <div key={i}>{log}</div>)}
-            </div>
-        </div>
-    );
+    const handlePrint = () => {
+        if (!editorRef.current) return;
+        const content = editorRef.current.innerHTML;
+        const win = window.open('', '_blank');
+        if (win) {
+            win.document.write(`
+                <html>
+                    <head>
+                        <title>Contrato Midas - ${client?.name}</title>
+                        <style>
+                            body { font-family: sans-serif; padding: 40px; line-height: 1.5; color: #333; }
+                            h1 { text-align: center; font-size: 18px; text-transform: uppercase; margin-bottom: 30px; }
+                            p { margin-bottom: 10px; font-size: 12px; text-align: justify; }
+                            table { width: 100%; margin-top: 50px; border-collapse: collapse; }
+                        </style>
+                    </head>
+                    <body>${content}</body>
+                </html>
+            `);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+    };
 
     return (
-        <div className="fixed inset-0 z-[110] bg-slate-100 flex flex-col">
-            <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[110] bg-slate-100 flex flex-col animate-in fade-in duration-300">
+            <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><span className="material-symbols-outlined">arrow_back</span></button>
-                    <h2 className="text-lg font-black uppercase">Editor de Contrato</h2>
-                    <button 
-                        onClick={() => setUseSimpleEditor(!useSimpleEditor)}
-                        className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
-                    >
-                        {useSimpleEditor ? 'Usar Editor Rico' : 'Usar Editor Simples (Segurança)'}
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <span className="material-symbols-outlined">arrow_back</span>
                     </button>
+                    <div>
+                        <h2 className="text-lg font-black uppercase tracking-tight">Editor de Contrato</h2>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">{client?.name} • #{reservation.id.substring(0, 8)}</p>
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm">
-                        {isSaving ? 'Salvando...' : 'Salvar'}
+                <div className="flex items-center gap-3">
+                    <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all">
+                        <span className="material-symbols-outlined text-lg">print</span>
+                        Imprimir
+                    </button>
+                    <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-lg disabled:opacity-50">
+                        {isSaving ? <span className="animate-spin material-symbols-outlined text-lg">progress_activity</span> : <span className="material-symbols-outlined text-lg">save</span>}
+                        Salvar Contrato
                     </button>
                 </div>
             </header>
-            
-            <div className="flex-1 overflow-hidden flex justify-center p-4 md:p-8">
-                <div className="w-full max-w-[210mm] bg-white shadow-2xl rounded-xl overflow-hidden flex flex-col border border-slate-200">
-                    {useSimpleEditor ? (
-                        <textarea 
-                            className="flex-1 p-10 font-mono text-sm outline-none resize-none"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                        />
-                    ) : (
-                        <ReactQuill 
-                            theme="snow" 
-                            value={content} 
-                            onChange={setContent} 
-                            className="flex-1 flex flex-col"
-                            onError={(err) => {
-                                addLog(`Erro no Quill: ${err}`);
-                                setUseSimpleEditor(true);
-                            }}
-                        />
-                    )}
-                </div>
+
+            {/* Toolbar Customizada */}
+            <div className="bg-slate-50 border-b border-slate-200 px-8 py-2 flex items-center gap-2 overflow-x-auto">
+                <button onClick={() => execCommand('bold')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Negrito"><span className="material-symbols-outlined text-xl">format_bold</span></button>
+                <button onClick={() => execCommand('italic')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Itálico"><span className="material-symbols-outlined text-xl">format_italic</span></button>
+                <button onClick={() => execCommand('underline')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Sublinhado"><span className="material-symbols-outlined text-xl">format_underlined</span></button>
+                <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                <button onClick={() => execCommand('justifyLeft')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200"><span className="material-symbols-outlined text-xl">format_align_left</span></button>
+                <button onClick={() => execCommand('justifyCenter')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200"><span className="material-symbols-outlined text-xl">format_align_center</span></button>
+                <button onClick={() => execCommand('justifyFull')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200"><span className="material-symbols-outlined text-xl">format_align_justify</span></button>
+                <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                <button onClick={() => execCommand('insertUnorderedList')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200"><span className="material-symbols-outlined text-xl">format_list_bulleted</span></button>
             </div>
-            
-            {/* Painel de Debug Oculto (Acessível via Console) */}
-            <style>{`
-                .ql-container.ql-snow{border:none!important;font-family:sans-serif;font-size:14px;}.ql-toolbar.ql-snow{border:none!important;border-bottom:1px solid #f1f5f9!important;background:#f8fafc;}.ql-editor{padding:50px 70px!important;min-height:100%;}
-            `}</style>
+
+            <div className="flex-1 overflow-y-auto flex justify-center p-4 md:p-8 bg-slate-100">
+                <div 
+                    ref={editorRef}
+                    contentEditable
+                    className="w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl p-[20mm] outline-none prose prose-slate max-w-none"
+                    style={{ fontFamily: 'serif' }}
+                />
+            </div>
+
+            {isLoading && (
+                <div className="fixed inset-0 z-[120] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                    <span className="animate-spin material-symbols-outlined text-4xl text-primary">progress_activity</span>
+                </div>
+            )}
         </div>
     );
 };
