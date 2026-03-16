@@ -6,6 +6,10 @@ import { supabase } from '../lib/supabase';
 import { Vehicle } from '../types';
 import { Github } from 'lucide-react';
 
+// Import assets
+import locadoraFachada from '../src/assets/locadora_fachada.webp';
+import midasVideo from '../src/assets/midas_video.mp4';
+
 const PublicLanding: React.FC = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -89,7 +93,7 @@ const PublicLanding: React.FC = () => {
         <div className="relative">
           <div className="absolute -inset-4 bg-accent-sunshine/10 rounded-[2rem] blur-2xl"></div>
           <img 
-            src="/src/assets/locadora_fachada.webp" 
+            src={locadoraFachada} 
             alt="Fachada Midas" 
             className="relative rounded-[2rem] shadow-2xl border-8 border-white object-cover aspect-[4/3] w-full"
           />
@@ -169,7 +173,7 @@ const PublicLanding: React.FC = () => {
         <div className="order-2 lg:order-1 relative">
           <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-xl"></div>
           <video 
-            src="/src/assets/midas_video.mp4" 
+            src={midasVideo} 
             className="relative rounded-3xl shadow-2xl w-full aspect-video object-cover border-4 border-white"
             autoPlay 
             muted 
