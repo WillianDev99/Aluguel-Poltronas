@@ -29,7 +29,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 .from('rental_contracts')
                 .select('content')
                 .eq('rental_id', reservation.id)
-                .single();
+                .maybeSingle();
 
             if (existingContract) {
                 setContent(existingContract.content);
@@ -38,6 +38,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 const { data: template } = await supabase
                     .from('contract_templates')
                     .select('content')
+                    .limit(1)
                     .single();
 
                 if (template) {
@@ -83,7 +84,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 .upsert({
                     rental_id: reservation.id,
                     content: content
-                }, { onConflict: 'rental_id' });
+                });
 
             if (error) throw error;
             toast.success('Contrato salvo com sucesso!');
