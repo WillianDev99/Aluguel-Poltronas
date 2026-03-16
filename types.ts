@@ -109,4 +109,13 @@ export interface UserProfile {
   avatar_url?: string;
 }
 
-export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS';
+export interface APIKey {
+  id: string;
+  key_value: string;
+  client_name: string;
+  is_active: boolean;
+  created_at: string;
+  last_used_at?: string;
+}
+
+export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS' | 'INTEGRATIONS';
