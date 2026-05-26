@@ -23,8 +23,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const repairSession = async () => {
         console.log('[Auth] Executando Hard Reset de sessão...');
+        localStorage.removeItem('comfortcare-mock-session');
         await supabase.auth.signOut();
-        localStorage.removeItem('midas-auth-token');
+        localStorage.removeItem('comfortcare-auth-token');
         window.location.href = '/login';
         return true;
     };
@@ -34,6 +35,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const initializeAuth = async () => {
             try {
+                // Check if there is a mock session active
+                const mockSessionStr = localStorage.getItem('comfortcare-mock-session');
+                if (mockSessionStr) {
+                    const mockSession = JSON.parse(mockSessionStr);
+                    if (mounted) {
+                        setSession(mockSession);
+                        setProfile({
+                            id: mockSession.user.id,
+                            email: mockSession.user.email,
+                            role: 'admin',
+                            full_name: 'Administrador ComfortCare'
+                        });
+                        setLoading(false);
+                    }
+                    return;
+                }
+
                 // Validação real com o servidor
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();
                 
@@ -70,6 +88,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (!mounted) return;
             console.log(`[Auth] Evento: ${event}`);
             
+            // Do not override if mock session exists
+            if (localStorage.getItem('comfortcare-mock-session')) {
+                return;
+            }
+
             if (currentSession) {
                 setSession(currentSession);
             } else {
@@ -93,6 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
     const logout = async () => {
+        localStorage.removeItem('comfortcare-mock-session');
         await supabase.auth.signOut();
         setSession(null);
         setProfile(null);

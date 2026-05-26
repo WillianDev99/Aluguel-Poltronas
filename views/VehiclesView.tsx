@@ -87,7 +87,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading('Salvando veículo...');
+    const loadingToast = toast.loading('Salvando poltrona...');
 
     try {
       const finalData = { ...formData };
@@ -102,11 +102,11 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
         await onAddVehicle(finalData);
       }
       
-      toast.success('Veículo salvo com sucesso!', { id: loadingToast });
+      toast.success('Poltrona salva com sucesso!', { id: loadingToast });
       handleCloseModal();
     } catch (err: any) {
-      console.error("Erro ao salvar veículo:", err);
-      toast.error('Erro ao salvar veículo: ' + (err.message || 'Falha na conexão'), { id: loadingToast });
+      console.error("Erro ao salvar poltrona:", err);
+      toast.error('Erro ao salvar poltrona: ' + (err.message || 'Falha na conexão'), { id: loadingToast });
     } finally {
       setIsSubmitting(false);
     }
@@ -116,18 +116,18 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-primary dark:text-white text-3xl font-black tracking-tight">Veículos da Frota</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie a disponibilidade e cadastro dos veículos</p>
+          <h2 className="text-primary dark:text-white text-3xl font-black tracking-tight">Acervo de Poltronas</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie a disponibilidade e cadastro das poltronas pós-cirúrgicas</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition active:scale-95"
+          className="px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition active:scale-95 shadow-sm"
         >
-          + Novo Veículo
+          + Nova Poltrona
         </button>
       </div>
 
-      <div className="bg-white dark:bg-background-dark rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm mb-12 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm mb-12 p-6">
         {isLoading ? (
           <TableSkeleton />
         ) : (
@@ -135,8 +135,8 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50 dark:bg-primary/10 border-b border-gray-200 dark:border-gray-800">
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Veículo</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Placa</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Poltrona</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Nº de Série</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Ano</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoria</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
@@ -151,8 +151,8 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                         {v.image_url ? (
                           <img src={v.image_url} alt={v.model} className="size-10 rounded-lg object-cover border border-slate-200" />
                         ) : (
-                          <div className="size-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                            <span className="material-symbols-outlined">directions_car</span>
+                          <div className="size-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                            <span className="material-symbols-outlined">chair</span>
                           </div>
                         )}
                         <div className="flex flex-col">
@@ -177,7 +177,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                             v.status === 'Reservado' ? 'bg-orange-500' :
                               'bg-blue-500'
                           }`}></span>
-                        {v.status}
+                        {v.status === 'Em manutenção' ? 'Higienização' : v.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -219,13 +219,13 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                               }}
                               className="w-full flex items-center gap-3 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
                             >
-                              <span className="material-symbols-outlined text-lg">build</span>
-                              Status: Em manutenção
+                              <span className="material-symbols-outlined text-lg">cleaning_services</span>
+                              Status: Higienização
                             </button>
                             <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
                             <button
                               onClick={async () => {
-                                if (window.confirm('Tem certeza que deseja excluir este veículo?')) {
+                                  if (window.confirm('Tem certeza que deseja excluir esta poltrona?')) {
                                   await onDeleteVehicle(v.id);
                                   setActiveMenu(null);
                                 }
@@ -233,7 +233,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                               className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
                             >
                               <span className="material-symbols-outlined text-lg">delete</span>
-                              Excluir Veículo
+                              Excluir Poltrona
                             </button>
                           </div>
                         )}
@@ -242,7 +242,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500 italic">Nenhum veículo encontrado.</td>
+                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500 italic">Nenhuma poltrona encontrada.</td>
                   </tr>
                 )}
               </tbody>
@@ -252,11 +252,11 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-background-dark w-full max-w-4xl rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800">
               <h3 className="text-xl font-bold text-primary dark:text-white">
-                {editingId ? 'Editar Veículo' : 'Cadastro de Novo Veículo'}
+                {editingId ? 'Editar Poltrona' : 'Cadastro de Nova Poltrona'}
               </h3>
               <button
                 onClick={handleCloseModal}
@@ -269,11 +269,11 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
 
             <form className="p-6" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Foto do Veículo */}
+                {/* Foto da Poltrona */}
                 <div className="md:col-span-3 space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Foto do Veículo</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Foto da Poltrona</label>
                   <div className="flex items-center gap-6">
-                    <div className="size-32 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group">
+                    <div className="size-32 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group">
                       {attachedImage ? (
                         <img src={URL.createObjectURL(attachedImage)} className="w-full h-full object-cover" />
                       ) : formData.image_url ? (
@@ -296,10 +296,10 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Marca</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Fabricante / Marca</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
-                    placeholder="Ex: TOYOTA"
+                    placeholder="Ex: ComfortLux"
                     type="text"
                     required
                     value={formData.brand}
@@ -307,10 +307,10 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Modelo</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Modelo da Poltrona</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
-                    placeholder="Ex: COROLLA XEI"
+                    placeholder="Ex: Reclinável Premium Elétrica"
                     type="text"
                     required
                     value={formData.model}
@@ -318,22 +318,22 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Placa</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nº de Série (Patrimônio)</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3 font-mono"
-                    placeholder="ABC1234"
+                    placeholder="Ex: CC-1001"
                     type="text"
                     required
-                    maxLength={7}
+                    maxLength={10}
                     value={formData.plate}
                     onChange={e => {
-                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
                       setFormData({ ...formData, plate: value });
                     }}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ano</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ano de Fabricação</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                     placeholder="YYYY"
@@ -353,25 +353,25 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                   >
                     <option value="">Selecione</option>
-                    <option value="Compacto">Compacto</option>
-                    <option value="Sedan Premium">Sedan Premium</option>
-                    <option value="SUV">SUV</option>
-                    <option value="Econômico">Econômico</option>
-                    <option value="Premium">Premium</option>
+                    <option value="Reclinável Elétrica">Reclinável Elétrica</option>
+                    <option value="Elevação Manual">Elevação Manual</option>
+                    <option value="Luxo com Massageador">Luxo com Massageador</option>
+                    <option value="Infantil / Pediátrica">Infantil / Pediátrica</option>
+                    <option value="Básica">Básica</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Cor</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Cor / Revestimento</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
-                    placeholder="Ex: PRATA"
+                    placeholder="Ex: Couro Sintético Bege"
                     type="text"
                     value={formData.color}
                     onChange={e => setFormData({ ...formData, color: e.target.value.toUpperCase() })}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">KM Atual</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Uso Acumulado (Locações)</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                     type="text"
@@ -393,54 +393,54 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                     <option value="Disponível">Disponível</option>
                     <option value="Alugado">Alugado</option>
                     <option value="Reservado">Reservado</option>
-                    <option value="Em manutenção">Em manutenção</option>
+                    <option value="Em manutenção">Em higienização</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Transmissão</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tipo de Acionamento</label>
                   <select
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                     value={formData.transmission}
                     onChange={e => setFormData({ ...formData, transmission: e.target.value as any })}
                   >
                     <option value="Manual">Manual</option>
-                    <option value="Automático">Automático</option>
+                    <option value="Automático">Elétrico</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Renavan</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Dimensões (LxAxP)</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
-                    placeholder="Digite o Renavan"
+                    placeholder="Ex: 85 x 90 x 105 cm"
                     type="text"
                     value={formData.renavan}
                     onChange={e => setFormData({ ...formData, renavan: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chassis</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Recursos Adicionais</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
-                    placeholder="Número do Chassis"
+                    placeholder="Ex: Controle remoto, Massageador, Bivolt"
                     type="text"
                     value={formData.chassis}
                     onChange={e => setFormData({ ...formData, chassis: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Passageiros / Portas</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Suporte de Peso (kg) / Reclinação Máxima (°)</label>
                   <div className="flex gap-2">
                     <input
                       className="w-1/2 h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                       type="number"
-                      placeholder="Passageiros"
+                      placeholder="Capacidade (kg) (Ex: 150)"
                       value={formData.passengers}
                       onChange={e => setFormData({ ...formData, passengers: Number(e.target.value) })}
                     />
                     <input
                       className="w-1/2 h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                       type="number"
-                      placeholder="Portas"
+                      placeholder="Reclinação (°) (Ex: 180)"
                       value={formData.doors}
                       onChange={e => setFormData({ ...formData, doors: Number(e.target.value) })}
                     />
@@ -457,7 +457,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Valor da Franquia de Seguro (R$)</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Taxa de Higienização Padrão (R$)</label>
                   <input
                     className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
                     type="number"
@@ -484,7 +484,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   {isSubmitting ? (
                     <span className="animate-spin material-symbols-outlined">progress_activity</span>
                   ) : (
-                    <span>{editingId ? 'Salvar Alterações' : 'Salvar Veículo'}</span>
+                    <span>{editingId ? 'Salvar Alterações' : 'Salvar Poltrona'}</span>
                   )}
                 </button>
               </div>

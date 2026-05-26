@@ -9,29 +9,12 @@ import EditReservationModal from '../components/EditReservationModal';
 const ContractEditorView = React.lazy(() => import('./ContractEditorView'));
 
 const INSPECTION_SLOTS = [
-  { id: 'ext_front_1', label: 'Frente 1', group: 'Externo' },
-  { id: 'ext_front_2', label: 'Frente 2', group: 'Externo' },
-  { id: 'ext_front_3', label: 'Frente 3', group: 'Externo' },
-  { id: 'ext_back_1', label: 'Traseira 1', group: 'Externo' },
-  { id: 'ext_back_2', label: 'Traseira 2', group: 'Externo' },
-  { id: 'ext_back_3', label: 'Traseira 3', group: 'Externo' },
-  { id: 'ext_side_l1', label: 'Lateral Esquerda 1', group: 'Externo' },
-  { id: 'ext_side_l2', label: 'Lateral Esquerda 2', group: 'Externo' },
-  { id: 'ext_side_r1', label: 'Lateral Direita 1', group: 'Externo' },
-  { id: 'ext_side_r2', label: 'Lateral Direita 2', group: 'Externo' },
-  { id: 'ext_roof', label: 'Teto (Cima)', group: 'Externo' },
-  { id: 'ext_trunk', label: 'Porta-Malas Aberto', group: 'Externo' },
-  { id: 'ext_engine', label: 'Capô Aberto (Motor)', group: 'Externo' },
-  { id: 'int_seats_1', label: 'Bancos Dianteiros', group: 'Interno' },
-  { id: 'int_seats_2', label: 'Bancos Traseiros', group: 'Interno' },
-  { id: 'int_dash', label: 'Painel (Meia Chave)', group: 'Interno' },
-  { id: 'int_media', label: 'Multimídia', group: 'Interno' },
-  { id: 'int_glove', label: 'Porta-Luvas Aberto', group: 'Interno' },
-  { id: 'int_roof', label: 'Teto Interno', group: 'Interno' },
-  { id: 'eq_key', label: 'Chave', group: 'Equipamentos' },
-  { id: 'eq_spare', label: 'Step', group: 'Equipamentos' },
-  { id: 'eq_tools', label: 'Kit de Chaves Step', group: 'Equipamentos' },
-  { id: 'eq_triangle', label: 'Triângulo', group: 'Equipamentos' },
+  { id: 'est_assento', label: 'Assento e Encosto (Estofado)', group: 'Aparência' },
+  { id: 'est_laterais', label: 'Laterais e Apoios de Braço', group: 'Aparência' },
+  { id: 'mec_motor', label: 'Motor, Controle e Cabos', group: 'Funcionamento' },
+  { id: 'mec_rodas', label: 'Estrutura Metálica e Rodas/Pés', group: 'Funcionamento' },
+  { id: 'hig_capa', label: 'Capa Protetora Impermeável', group: 'Higiene & Acessórios' },
+  { id: 'hig_selo', label: 'Selo/Plástico de Sanitização', group: 'Higiene & Acessórios' },
 ];
 
 interface ReservationsViewProps {
@@ -101,7 +84,7 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
               <span className="absolute left-4 text-slate-400 material-symbols-outlined">search</span>
               <input
                 className="w-full pl-12 pr-4 py-3 bg-background-light dark:bg-background-dark border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
-                placeholder="Buscar por cliente, veículo ou placa..."
+                placeholder="Buscar por cliente, poltrona ou nº de série..."
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -135,7 +118,7 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Veículo</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Retirada</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Devolução</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
@@ -242,8 +225,8 @@ const InspectionPhotoGrid: React.FC<{
   onPhotoChange: (slotId: string, file: File) => void;
   isSubmitting: boolean;
 }> = ({ photos, onPhotoChange, isSubmitting }) => {
-  const groups = ['Externo', 'Interno', 'Equipamentos'];
-  const [activeGroup, setActiveGroup] = useState('Externo');
+  const groups = ['Aparência', 'Funcionamento', 'Higiene & Acessórios'];
+  const [activeGroup, setActiveGroup] = useState('Aparência');
 
   return (
     <div className="space-y-6">
@@ -424,8 +407,8 @@ const ReturnModal: React.FC<{ reservation: Reservation; onClose: () => void; onU
 };
 
 const InspectionReportModal: React.FC<{ reservation: Reservation; onClose: () => void; }> = ({ reservation, onClose }) => {
-  const [activeGroup, setActiveGroup] = useState('Externo');
-  const groups = ['Externo', 'Interno', 'Equipamentos'];
+  const [activeGroup, setActiveGroup] = useState('Aparência');
+  const groups = ['Aparência', 'Funcionamento', 'Higiene & Acessórios'];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

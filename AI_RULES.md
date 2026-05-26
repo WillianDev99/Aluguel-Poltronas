@@ -1,4 +1,4 @@
-# AI Development Rules - Midas Rent a Car
+# AI Development Rules - ComfortCare
 
 ## Tech Stack
 - **React 19 & TypeScript**: Core framework for building the user interface with type safety.

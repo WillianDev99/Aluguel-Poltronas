@@ -19,17 +19,9 @@ export const clientSchema = z.object({
             return age >= 18;
         }, 'Cliente deve ter no mínimo 18 anos'),
 
-    cnh_number: z.string()
-        .min(11, 'CNH deve ter 11 dígitos')
-        .max(11, 'CNH deve ter 11 dígitos'),
-
-    cnh_category: z.string().min(1, 'Categoria CNH obrigatória'),
-
-    cnh_expiration: z.string()
-        .refine(
-            (date) => new Date(date) > new Date(),
-            'CNH vencida ou prestes a vencer'
-        ),
+    cnh_number: z.string().optional().or(z.literal('')),
+    cnh_category: z.string().optional().or(z.literal('')),
+    cnh_expiration: z.string().optional().or(z.literal('')),
 
     email: z.string()
         .email('Email inválido'),

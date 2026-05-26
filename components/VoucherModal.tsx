@@ -40,7 +40,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
       currency: 'BRL'
     });
 
-  const voucherRef = `MDS-${reservation.id.toString().substring(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
+  const voucherRef = `CC-${reservation.id.toString().substring(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
 
   const handlePrint = () => {
     window.print();
@@ -71,7 +71,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
       copiedPages.forEach((page) => mergedPdf.addPage(page));
 
       const docsToAttach = [
-        { url: client?.cnh_url, name: 'CNH' },
+        { url: client?.cnh_url, name: 'RG_CPF' },
         { url: client?.address_proof_url, name: 'Comprovante' },
         { url: client?.selfie_url, name: 'Selfie' }
       ];
@@ -156,12 +156,12 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
           <div className="p-[15mm] md:p-[20mm] relative flex flex-col box-border" style={{ pageBreakAfter: 'always', height: '296mm' }}>
             <div className="flex items-center justify-between mb-6 border-b-4 border-primary pb-4">
               <div className="flex items-center gap-6">
-                <div className="bg-primary p-3 rounded-xl shadow-lg flex items-center justify-center" style={{ backgroundColor: '#004d4d' }}>
-                  <img src="/Logo-verde.png" alt="Midas" className="h-12 w-auto brightness-0 invert" />
+                <div className="bg-primary p-3 rounded-xl shadow-lg flex items-center justify-center" style={{ backgroundColor: '#0f766e' }}>
+                  <span className="material-symbols-outlined text-4xl text-white">chair</span>
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Midas Rent a Car</h1>
-                  <p className="text-[10px] text-primary font-bold tracking-widest uppercase mt-1">Dirija sua liberdade</p>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">ComfortCare</h1>
+                  <p className="text-[10px] text-primary font-bold tracking-widest uppercase mt-1">Aluguel de Poltronas Pós-Cirúrgicas</p>
                 </div>
               </div>
               <div className="text-right">
@@ -189,7 +189,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     <p className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-0.5">{client?.cpf || '---'}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Nº da CNH</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Nº do RG / CPF</p>
                     <p className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-0.5">{client?.cnh_number || '---'}</p>
                   </div>
                 </div>
@@ -197,8 +197,8 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
 
               <section>
                 <div className="bg-slate-900 text-white px-4 py-1 rounded-r-full mb-4 flex items-center gap-2 w-fit pr-10">
-                  <span className="material-symbols-outlined text-sm">directions_car</span>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest">02. Identificação do Veiculo</h3>
+                  <span className="material-symbols-outlined text-sm">chair</span>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest">02. Identificação da Poltrona</h3>
                 </div>
                 <div className="grid grid-cols-3 gap-6 px-4">
                   <div className="col-span-2 flex gap-4">
@@ -207,14 +207,14 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Modelo / Categoria</p>
                       <p className="text-sm font-bold uppercase text-slate-900">{vehicle?.model || reservation.vehicleModel} - {vehicle?.category || '---'}</p>
                       <div className="mt-2">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Placa</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Nº de Série (Patrimônio)</p>
                         <p className="text-sm font-bold font-mono text-primary bg-primary/5 border border-primary/20 px-3 py-0.5 rounded inline-block">{vehicle?.plate || reservation.vehiclePlate}</p>
                       </div>
                     </div>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Câmbio</p>
-                    <p className="text-sm font-bold text-slate-900 uppercase">{vehicle?.transmission || '---'}</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Acionamento</p>
+                    <p className="text-sm font-bold text-slate-900 uppercase">{vehicle?.transmission === 'Automático' ? 'Elétrico' : 'Manual'}</p>
                   </div>
                 </div>
               </section>
@@ -222,19 +222,19 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
               <section>
                 <div className="bg-slate-900 text-white px-4 py-1 rounded-r-full mb-4 flex items-center gap-2 w-fit pr-10">
                   <span className="material-symbols-outlined text-sm">calendar_month</span>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest">03. Dados da Reserva</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest">03. Período & Valores de Locação</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
                   <div className="col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Retirada Agendada</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Entrega Agendada</p>
                     <p className="text-base font-black text-primary">{formatDate(reservation.pickup_date)}</p>
                   </div>
                   <div className="col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Devolução Agendada</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Coleta Agendada</p>
                     <p className="text-base font-black text-primary">{formatDate(reservation.return_date)}</p>
                   </div>
                   <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Diárias</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Período</p>
                     <p className="text-sm font-black text-slate-900">{reservation.days} {reservation.days === 1 ? 'dia' : 'dias'}</p>
                   </div>
                   <div className="bg-amber-50 p-2 rounded-lg border border-amber-200">
@@ -242,17 +242,17 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     <p className="text-sm font-black text-amber-700">{money(reservation.security_deposit)}</p>
                   </div>
                   <div className="bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-0.5">Franquia de Seguro</p>
+                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-0.5">Taxa de Higienização</p>
                     <p className="text-sm font-black text-rose-700">{money(vehicle?.default_insurance_value || 0)}</p>
                   </div>
                   <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Seguro Premium</p>
+                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Garantia Hospitalar</p>
                     <p className="text-sm font-black text-emerald-700 uppercase">Incluso</p>
                   </div>
-                  <div className="col-span-3 bg-[#006666] p-5 rounded-2xl shadow-lg flex items-center justify-center gap-10 mt-2">
+                  <div className="col-span-3 bg-[#0f766e] p-5 rounded-2xl shadow-lg flex items-center justify-center gap-10 mt-2">
                     <div className="text-center">
-                      <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-0">Total da Reserva</p>
-                      <p className="text-[9px] text-white/50 leading-none">(Diárias totais + serviços)</p>
+                      <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-0">Total da Locação</p>
+                      <p className="text-[9px] text-white/50 leading-none">(Diárias totais + adicionais)</p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-black text-white tracking-tight leading-none">{money(totalReserva)}</p>
@@ -260,9 +260,9 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                   </div>
                 </div>
                 <div className="mt-4 px-4 p-3 bg-rose-50 border border-rose-100 rounded-xl">
-                  <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Aviso de Responsabilidade</p>
+                  <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Nota Importante</p>
                   <p className="text-[10px] font-bold text-rose-800 leading-tight">
-                    O valor da Franquia de Seguro ({money(vehicle?.default_insurance_value || 0)}) NÃO está incluso no total da reserva. Este valor será cobrado APENAS em caso de sinistro (colisão, roubo, furto ou danos) conforme as condições gerais do contrato de locação.
+                    A Taxa de Higienização de ({money(vehicle?.default_insurance_value || 0)}) cobre os custos operacionais de esterilização e sanitização do produto para entrega segura, garantindo padrão hospitalar para o paciente.
                   </p>
                 </div>
               </section>
@@ -270,7 +270,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
 
             <div className="mt-8 pt-6 border-t border-slate-100">
               <p className="text-[9px] text-slate-400 font-medium text-center uppercase tracking-widest leading-relaxed">
-                Este é um documento de pré-reserva. A operação de locação só será concluída após a avaliação da loja e assinatura do contrato.
+                Este é um documento de pré-reserva de equipamento. A operação de locação só será concluída após a assinatura do contrato físico ou digital de locação.
               </p>
             </div>
           </div>
@@ -283,9 +283,9 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
             </div>
             <div className="space-y-[10mm] flex-1">
               <div className="space-y-3">
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Carteira Nacional de Habilitação (CNH)</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Documento de Identificação (RG/CPF)</p>
                 <div className="h-[65mm] w-full bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden p-2 relative">
-                  {renderDocument(client?.cnh_url, 'CNH')}
+                  {renderDocument(client?.cnh_url, 'RG_CPF')}
                 </div>
               </div>
               <div className="space-y-3">
@@ -295,7 +295,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                 </div>
               </div>
               <div className="space-y-3">
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Selfie com Documento</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Foto do Local de Instalação / Selfie</p>
                 <div className="h-[65mm] w-full bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden p-2 relative">
                   {renderDocument(client?.selfie_url, 'Selfie')}
                 </div>
@@ -305,76 +305,73 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
 
           {/* PÁGINA 3: ORIENTAÇÕES (TÓPICO 05) */}
           <div className="p-[20mm] relative flex flex-col bg-slate-50 box-border" style={{ pageBreakAfter: 'always', height: '296mm' }}>
-            <div className="bg-primary text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full">
+            <div className="bg-primary text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full" style={{ backgroundColor: '#0f766e' }}>
               <span className="material-symbols-outlined">info</span>
               <h3 className="text-sm font-black uppercase tracking-[0.2em]">05. Orientações sobre a Locação</h3>
             </div>
 
             <div className="space-y-8 text-[11px] leading-relaxed text-slate-700 flex-1">
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3">Informações Importantes</h4>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Informações Importantes</h4>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li>Por favor, verifique todos os detalhes e discriminações de serviços e valores adicionais contratados antes de assinar qualquer documento.</li>
-                  <li><strong>Travessia de Fronteiras:</strong> consulte com antecedência a locadora sobre a possibilidade de utilizar o carro alugado em viagens internacionais e possíveis custos extras.</li>
-                  <li>No método de pagamento parcial, em caso de cancelamento 48h antes da retirada ou não comparecimento, será retido 100% do valor pré-pago da reserva.</li>
+                  <li>Por favor, verifique todos os detalhes e discriminações de serviços e acessórios adicionais contratados antes de assinar o termo de locação.</li>
+                  <li><strong>Uso em Ambiente Limpo:</strong> A poltrona deve ser mantida em local seco e livre de poeira para evitar contaminações no estofado.</li>
+                  <li>No método de pagamento parcelado, o cancelamento até 48h antes da entrega ou não comparecimento poderá acarretar retenção de custos logísticos.</li>
                 </ul>
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3">Prazo para Retirada do Veículo</h4>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Prazo para Entrega / Recebimento</h4>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li><strong>Tolerância para Retirada:</strong> A Midas Rent a Car garantirá sua reserva por até 30 minutos após o horário agendado (respeitando o horário de funcionamento da loja).</li>
-                  <li>Chegar após esse período será considerado não comparecimento (No-Show), resultando no cancelamento da reserva e na aplicação da penalidade cabível.</li>
-                  <li><strong>Requisitos para a retirada:</strong> para retirar o veículo, é necessário cumprir os requisitos da locadora (MIDAS RENT A CAR):
+                  <li><strong>Tolerância de Recebimento:</strong> A ComfortCare garante a entrega no horário agendado com tolerância de até 30 minutos por parte do cliente para recebimento e assinatura.</li>
+                  <li>O não comparecimento do responsável no local de entrega resultará no retorno do equipamento e cobrança de nova taxa de frete.</li>
+                  <li><strong>Requisitos para o recebimento:</strong> para receber a poltrona, é necessário cumprir os requisitos da locadora:
                     <ul className="list-circle pl-5 mt-2 space-y-1">
-                      <li>Documento oficial com foto</li>
-                      <li>CNH válida</li>
-                      <li>Cartão de crédito físico em nome do titular com limite suficiente para caução</li>
-                      <li>Demais políticas da locadora</li>
+                      <li>Documento oficial com foto do locatário</li>
+                      <li>Comprovante de residência válido</li>
+                      <li>Assinatura do contrato digital ou físico pelo titular da locação</li>
                     </ul>
                   </li>
-                  <li>Caso algum requisito não seja atendido, a locadora Midas Rent a Car poderá recusar a entrega do veículo (Turn Down).</li>
-                  <li>Não é permitido retirar o veículo antes do horário agendado.</li>
                 </ul>
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3">Instruções de Retirada</h4>
-                <p>O veículo poderá ser retirado na sede da locadora, com endereço na <strong>Avenida Prefeito Jaques Nunes, nº 2200, Tianguá-CE</strong>.</p>
-                <p className="mt-2">O veículo também poderá ser entregue em local público dentro dos limites da área urbana de Tianguá-CE sem taxa extra. Para interiores e outras cidades, serão cobrados os custos de entrega.</p>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Instruções de Entrega & Instalação</h4>
+                <p>A poltrona será entregue e instalada no endereço indicado pelo cliente, com suporte de nossa sede operacional situada na <strong>Rua Monsenhor Franklin, nº 354, Centro, Tianguá-CE</strong>.</p>
+                <p className="mt-2">A entrega e instalação em áreas urbanas de Tianguá-CE não possuem taxa extra. Para zonas rurais e outras cidades da região da Ibiapaba, aplicam-se taxas de deslocamento conforme tabela vigente.</p>
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3">Instruções de Devolução</h4>
-                <p>O veículo poderá ser devolvido na sede da locadora ou em local público dentro da área urbana de Tianguá-CE. Fora desse limite, aplicam-se taxas de deslocamento.</p>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Instruções de Coleta</h4>
+                <p>A coleta da poltrona será realizada por nossa equipe técnica no mesmo endereço de entrega ao término do contrato, em data e horário previamente agendados.</p>
                 <div className="mt-4 p-4 bg-white rounded-lg border border-slate-200">
-                  <h5 className="font-black text-primary uppercase text-[11px] mb-2">Política de Abastecimento</h5>
-                  <p>A locadora exige que o veículo seja devolvido com o <strong>mesmo nível de combustível</strong> presente no momento da retirada. Para evitar cobranças adicionais, verifique atentamente as instruções no contrato.</p>
+                  <h5 className="font-black text-primary uppercase text-[11px] mb-2" style={{ color: '#0f766e' }}>Cuidados no Uso</h5>
+                  <p>Evite o uso de objetos cortantes ou produtos químicos corrosivos no estofado. Limpe apenas com pano levemente umedecido em água e sabão neutro.</p>
                 </div>
               </section>
             </div>
 
             <div className="mt-auto text-center border-t border-slate-200 pt-6">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MIDAS RENT A CAR - Tianguá, CE</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">COMFORTCARE - Tianguá, CE</p>
             </div>
           </div>
 
-          {/* PÁGINA 4: SEGURO PREMIUM (TÓPICO 06) */}
+          {/* PÁGINA 4: GARANTIA COMFORTCARE (TÓPICO 06) */}
           <div className="p-[20mm] relative flex flex-col box-border" style={{ height: '296mm' }}>
             <div className="bg-emerald-600 text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full">
               <span className="material-symbols-outlined">verified_user</span>
-              <h3 className="text-sm font-black uppercase tracking-[0.2em]">06. Seguro Premium Incluso</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.2em]">06. Garantia & Suporte ComfortCare</h3>
             </div>
 
             <div className="flex-1">
               <div className="bg-emerald-50/50 rounded-3xl border-2 border-emerald-100 p-8">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="size-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xl shadow-emerald-600/20">
-                    <span className="material-symbols-outlined text-4xl">security</span>
+                    <span className="material-symbols-outlined text-4xl">chair</span>
                   </div>
                   <div>
-                    <h4 className="text-xl font-black text-emerald-900 uppercase tracking-tight">Proteção Total Midas</h4>
-                    <p className="text-xs text-emerald-600 font-bold uppercase tracking-widest">Sua tranquilidade é nossa prioridade</p>
+                    <h4 className="text-xl font-black text-emerald-900 uppercase tracking-tight">Higienização & Suporte</h4>
+                    <p className="text-xs text-emerald-600 font-bold uppercase tracking-widest">Sua saúde e conforto são nossa prioridade</p>
                   </div>
                 </div>
 
@@ -393,16 +390,16 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     Condições Gerais
                   </h5>
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-                    O Seguro Premium Midas já está incluso no valor da sua locação. Ele oferece cobertura abrangente para os itens listados acima, 
-                    sujeito às condições contratuais de participação (franquia) e normas de segurança da locadora. 
-                    Em caso de qualquer evento, entre em contato imediatamente com nossa assistência 24h.
+                    A Garantia & Cobertura de Higiene ComfortCare já está inclusa no valor da sua locação. Ela oferece cobertura abrangente para os itens listados acima, 
+                    sujeito às condições contratuais de conservação básica e normas de segurança sanitária. 
+                    Em caso de qualquer falha mecânica ou elétrica, entre em contato imediatamente com nossa assistência rápida pelo telefone corporativo.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-auto text-center border-t border-slate-100 pt-6">
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">MIDAS RENT A CAR - Proteção Premium Inclusa</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">COMFORTCARE - Higienização & Suporte Hospitalar</p>
             </div>
           </div>
 

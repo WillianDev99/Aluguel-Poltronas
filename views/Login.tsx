@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface LoginProps {
   onLogin: () => void;
@@ -18,10 +19,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
     setError(null);
 
+    // Administrative bypass for presentation credentials
+    if (email === 'adm@gmail.com' && password === 'adm') {
+      const mockSession = {
+        user: {
+          id: 'c481dd65-85f1-41e0-bbe8-1a1c4a221fd0',
+          email: 'administrador@comfortcare.com.br'
+        }
+      };
+      localStorage.setItem('comfortcare-mock-session', JSON.stringify(mockSession));
+      toast.success('Login administrativo realizado com sucesso!');
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
+      return;
+    }
+
     try {
+      // Map the user's requested short password and email to compliant credentials behind the scenes
+      const authEmail = (email === 'adm@gmail.com') ? 'administrador@comfortcare.com.br' : email;
+      const authPassword = (email === 'adm@gmail.com' && password === 'adm') ? 'adm123' : password;
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: authEmail,
+        password: authPassword,
       });
 
       if (error) throw error;
@@ -34,44 +55,48 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4 transition-colors relative">
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors relative overflow-hidden">
+      {/* Glow Orbs para fundo */}
+      <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
+
       {/* Botão Voltar */}
       <button 
         onClick={() => navigate('/')}
-        className="absolute top-8 left-8 flex items-center gap-2 text-primary/60 dark:text-white/60 hover:text-primary dark:hover:text-white font-bold text-sm transition-colors group"
+        className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-secondary font-bold text-sm transition-colors group"
       >
         <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         Voltar para o Site
       </button>
-
-      <div className="w-full max-w-[480px] flex flex-col items-center">
+ 
+      <div className="w-full max-w-[460px] flex flex-col items-center relative z-10">
         <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center shadow-lg mb-2">
-            <span className="material-symbols-outlined text-white text-4xl">car_rental</span>
+          <div className="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-2">
+            <span className="material-symbols-outlined text-white text-3xl">medical_services</span>
           </div>
-          <h2 className="text-primary dark:text-white text-2xl font-bold tracking-tight">Midas Rent a Car</h2>
-          <p className="text-primary/60 dark:text-white/60 text-sm font-medium">Sistema Administrativo</p>
+          <h2 className="text-slate-900 dark:text-white text-2xl font-display font-black tracking-tight leading-none">ComfortCare</h2>
+          <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Portal Administrativo</p>
         </div>
-
-        <div className="w-full bg-white dark:bg-[#1a2e2f] rounded-xl shadow-xl border border-primary/5 p-8 sm:p-10 transition-all">
-          <h1 className="text-primary dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] text-center pb-8">
+ 
+        <div className="w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800/80 p-8 sm:p-10 transition-all">
+          <h1 className="text-slate-800 dark:text-white text-xl font-display font-bold leading-tight tracking-tight text-center pb-8">
             Acesse sua conta
           </h1>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 p-3 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                <span className="material-symbols-outlined text-lg">error</span>
-                {error}
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 p-3.5 rounded-xl flex items-center gap-2.5 text-red-600 dark:text-red-400 text-sm">
+                <span className="material-symbols-outlined text-lg shrink-0">error</span>
+                <span className="font-medium">{error}</span>
               </div>
             )}
             <div className="flex flex-col gap-2">
               <label className="flex flex-col w-full">
-                <p className="text-primary dark:text-white text-sm font-semibold leading-normal pb-1">Email Corporativo</p>
+                <p className="text-slate-700 dark:text-slate-350 text-xs font-bold uppercase tracking-wider pb-1.5 pl-1">Email Corporativo</p>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">mail</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">mail</span>
                   <input
-                    className="form-input flex w-full rounded-lg text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-background-light dark:bg-background-dark/50 focus:border-primary h-12 placeholder:text-primary/40 pl-12 pr-4 text-base font-normal leading-normal"
-                    placeholder="exemplo@midas.com"
+                    className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:border-primary h-12 placeholder:text-slate-400 pl-11 pr-4 text-sm font-semibold transition-all"
+                    placeholder="exemplo@comfortcare.com.br"
                     required
                     type="email"
                     value={email}
@@ -81,16 +106,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </label>
             </div>
-
+ 
             <div className="flex flex-col gap-2">
               <label className="flex flex-col w-full">
-                <div className="flex justify-between items-center pb-1">
-                  <p className="text-primary dark:text-white text-sm font-semibold leading-normal">Senha</p>
+                <div className="flex justify-between items-center pb-1.5">
+                  <p className="text-slate-700 dark:text-slate-350 text-xs font-bold uppercase tracking-wider pl-1">Senha</p>
                 </div>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">lock</span>
                   <input
-                    className="form-input flex w-full rounded-lg text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-primary/10 bg-background-light dark:bg-background-dark/50 focus:border-primary h-12 placeholder:text-primary/40 pl-12 pr-4 text-base font-normal leading-normal"
+                    className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:border-primary h-12 placeholder:text-slate-400 pl-11 pr-4 text-sm font-semibold transition-all"
                     placeholder="Digite sua senha"
                     required
                     type="password"
@@ -101,41 +126,41 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </label>
             </div>
-
+ 
             <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer group">
-                <input className="rounded border-primary/20 text-primary focus:ring-primary/30 w-4 h-4" type="checkbox" disabled={loading} />
-                <span className="text-sm text-primary/70 dark:text-white/70 group-hover:text-primary transition-colors">Lembrar de mim</span>
+                <input className="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 w-4 h-4 bg-slate-50 dark:bg-slate-800" type="checkbox" disabled={loading} />
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold group-hover:text-primary transition-colors">Lembrar de mim</span>
               </label>
-              <button type="button" className="text-primary dark:text-primary/40 text-sm font-medium hover:underline" disabled={loading}>Esqueci minha senha</button>
+              <button type="button" className="text-primary dark:text-secondary text-xs font-bold hover:underline" disabled={loading}>Esqueci minha senha</button>
             </div>
-
+ 
             <div className="pt-4">
               <button
-                className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-6 rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full bg-gradient-to-r from-primary to-primary-hover text-white font-bold py-3.5 px-6 rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 type="submit"
                 disabled={loading}
               >
                 {loading ? (
-                  <span className="animate-spin material-symbols-outlined text-xl">progress_activity</span>
+                  <span className="animate-spin material-symbols-outlined text-lg">progress_activity</span>
                 ) : (
                   <>
                     <span>Entrar no sistema</span>
-                    <span className="material-symbols-outlined text-xl">login</span>
+                    <span className="material-symbols-outlined text-lg">login</span>
                   </>
                 )}
               </button>
             </div>
           </form>
         </div>
-
-        <footer className="mt-12 flex flex-col items-center gap-4 text-primary/40 dark:text-white/30">
-          <div className="flex gap-6 text-xs font-medium uppercase tracking-widest">
-            <button className="hover:text-primary dark:hover:text-white transition-colors">Suporte</button>
-            <button className="hover:text-primary dark:hover:text-white transition-colors">Políticas</button>
-            <button className="hover:text-primary dark:hover:text-white transition-colors">Termos</button>
+ 
+        <footer className="mt-12 flex flex-col items-center gap-3 text-slate-400 dark:text-slate-600">
+          <div className="flex gap-6 text-[10px] font-bold uppercase tracking-wider">
+            <button className="hover:text-primary dark:hover:text-secondary transition-colors">Suporte</button>
+            <button className="hover:text-primary dark:hover:text-secondary transition-colors">Políticas</button>
+            <button className="hover:text-primary dark:hover:text-secondary transition-colors">Termos</button>
           </div>
-          <p className="text-xs">© 2024 Midas Rent a Car. v2.4.0</p>
+          <p className="text-[10px] font-semibold">© 2026 ComfortCare. v1.0.0</p>
         </footer>
       </div>
     </div>

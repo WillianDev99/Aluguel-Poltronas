@@ -37,7 +37,7 @@ const IntegrationsView: React.FC = () => {
     setIsGenerating(true);
     try {
       // Generate a simple secure random string as key
-      const keyValue = `midas_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      const keyValue = `comfortcare_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
       
       const { data, error } = await supabase
         .from('api_keys')
@@ -222,7 +222,7 @@ const IntegrationsView: React.FC = () => {
         <div className="space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed font-medium">
           <p>Envie as requisições para o endpoint de disponibilidade incluindo a chave no header <code className="bg-white/50 dark:bg-black/20 px-1.5 py-0.5 rounded text-primary dark:text-accent-sunshine">x-api-key</code>.</p>
           <div className="bg-slate-900 text-white p-4 rounded-xl font-mono text-xs overflow-x-auto">
-            GET /functions/v1/midas-availability?vehicle_id=ID_DO_VEICULO<br/>
+            GET /functions/v1/chair-availability?chair_id=ID_DA_POLTRONA<br/>
             Header: x-api-key: SUA_CHAVE
           </div>
         </div>

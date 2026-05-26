@@ -14,31 +14,18 @@ interface ReservationModalProps {
 }
 
 const ADDITIONAL_SERVICES = [
-    { id: 'lavagem', name: 'Taxa de lavagem', price: 30.00, type: 'fixed' },
-    { id: 'condutor', name: 'Condutor adicional', price: 24.99, type: 'daily' },
-    { id: 'locatario_jovem', name: 'Locatário Jovem', price: 29.79, type: 'daily' },
+    { id: 'higienizacao', name: 'Higienização Avançada Extra', price: 50.00, type: 'fixed' },
+    { id: 'travesseiro_ortopedico', name: 'Travesseiro Ortopédico de Apoio', price: 15.00, type: 'fixed' },
+    { id: 'entrega_urgente', name: 'Entrega Expressa / Urgente', price: 40.00, type: 'fixed' },
 ];
 
 const INSURANCE_COVERAGES = [
-    "INCÊNDIO PROVENIENTE DE COLISÃO",
-    "FENÔMENOS DA NATUREZA",
-    "PROTEÇÃO VIDRO/FAROL/LANTERNA/RETROVISOR",
-    "ASSISTÊNCIA FUNERAL INDIVIDUAL PARA O ASSOCIADO - VALOR LIMITADO A R$ 5.000,00",
-    "PAP - ACIDENTE PESSOAL POR PASSAGEIRO - R$ 10.000,00 (ATÉ 5 PASSAGEIROS)",
-    "REBOQUE - 1000 KM - PANE",
-    "COLISÃO INTEGRAL",
-    "CARRO RESERVA EM CASO DE EVENTO (SINISTRO) - 15 DIAS",
-    "ASSISTÊNCIA 24H - VEÍCULO LEVE - PLENO - 01/2024 KM ILIMITADO COLISÃO",
-    "REBOQUE - 200 KM PANE SECA",
-    "MEIO DE TRANSPORTE ALTERNATIVO",
-    "TROCA DE PNEU",
-    "RETORNO A DOMICILIO",
-    "CHAVEIRO",
-    "HOSPEDAGEM EMERGENCIAL - DIÁRIA DE HOTEL EM CASO DE EMERGÊNCIA R$500,00",
-    "VALOR DE ATÉ R$ 70.000,00 PARA RESSARCIMENTO AOS PREJUÍZOS MATERIAIS CAUSADOS AO TERCEIRO.",
-    "COLISÃO PARCIAL",
-    "ROUBO E FURTO",
-    "CARGA DE BATERIA"
+    "HIGIENIZAÇÃO COMPLETA ANTI-ALÉRGICA DE GRAU HOSPITALAR",
+    "GARANTIA DE SUBSTITUIÇÃO EM CASO DE FALHA MECÂNICA EM ATÉ 12H",
+    "ASSISTÊNCIA TÉCNICA E AJUSTES DE RECLINAÇÃO EM DOMICÍLIO",
+    "ESTOFADO IMPERMEÁVEL COM TRATAMENTO ANTIBACTERIANO E ANTIFÚNGICO",
+    "COBERTURA CONTRA DESGASTE NATURAL DE MOTORES E ARTICULAÇÕES",
+    "TESTE DE SEGURANÇA E PARADAS DE EMERGÊNCIA REALIZADOS ANTES DA ENTREGA"
 ];
 
 const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, onClose, onSave }) => {
@@ -237,16 +224,16 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                 <form onSubmit={handleSubmit} className="p-8 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Veículo Disponível</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona Disponível</label>
                             <select
                                 required
                                 className="w-full h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all dark:text-white"
                                 value={formData.vehicle_id}
                                 onChange={e => setFormData({ ...formData, vehicle_id: e.target.value })}
                             >
-                                <option value="">Selecione o veículo primeiro</option>
+                                <option value="">Selecione a poltrona primeiro</option>
                                 {availableVehicles.map(v => (
-                                    <option key={v.id} value={v.id}>{v.model} ({v.plate})</option>
+                                    <option key={v.id} value={v.id}>{v.model} (Série: {v.plate})</option>
                                 ))}
                             </select>
                         </div>
@@ -267,7 +254,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                         </div>
 
                         <div className="space-y-2 relative">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período da Reserva</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Período de Locação</label>
                             <button
                                 type="button"
                                 disabled={!formData.vehicle_id || isLoadingAvailability}
@@ -282,7 +269,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                                     <span>
                                         {formData.pickup_date
                                             ? `${formatDateTime(formData.pickup_date)} - ${formatDateTime(formData.return_date).split(' ')[1]}`
-                                            : !formData.vehicle_id ? 'Selecione o veículo' : 'Selecionar datas...'}
+                                            : !formData.vehicle_id ? 'Selecione a poltrona' : 'Selecionar datas...'}
                                     </span>
                                 </div>
                                 {isLoadingAvailability && <span className="animate-spin material-symbols-outlined text-xs">progress_activity</span>}
@@ -335,7 +322,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Serviços Adicionais</h3>
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Serviços e Acessórios Adicionais</h3>
                             <div className="space-y-2">
                                 {ADDITIONAL_SERVICES.map(service => (
                                     <label 
@@ -360,7 +347,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                         </div>
                     </div>
 
-                    {/* Bloco Informativo: Seguro Premium */}
+                    {/* Bloco Informativo: Garantia ComfortCare */}
                     <div className="space-y-4 p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200 dark:border-emerald-800/30">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -368,8 +355,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                                     <span className="material-symbols-outlined">verified_user</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Seguro Premium</h3>
-                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase">Proteção Total Inclusa na Locação</p>
+                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Garantia & Suporte ComfortCare</h3>
+                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase">Proteção Hospitalar & Técnica Inclusa</p>
                                 </div>
                             </div>
                             <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black uppercase rounded-full tracking-widest">Incluso</span>
@@ -408,11 +395,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                                 </span>
                                 {servicesTotal > 0 && (
                                     <span className="text-[10px] text-primary/60 font-medium">
-                                        Serviços: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(servicesTotal)}
+                                        Adicionais: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(servicesTotal)}
                                     </span>
                                 )}
                                 <span className="text-[10px] text-emerald-600 font-bold">
-                                    Seguro Premium: Incluso (R$ 0,00)
+                                    Garantia & Suporte ComfortCare: Incluso (R$ 0,00)
                                 </span>
                             </div>
                         </div>

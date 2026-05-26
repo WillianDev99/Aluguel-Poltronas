@@ -207,7 +207,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                   <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nome Completo</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">CPF / RG</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">CNH (Vencimento)</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Documentos</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cidade/UF</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
@@ -231,9 +231,27 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                         <div>{c.cpf}</div>
                         <div className="text-[10px] opacity-70">RG: {c.rg || 'N/A'}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono">
-                        <div>{c.cnh_number} ({c.cnh_category})</div>
-                        <div className="text-[10px] text-rose-500 font-bold">{c.cnh_expiration || 'N/A'}</div>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                        <div className="flex gap-2">
+                          <span 
+                            title={c.cnh_url ? "RG/CPF Anexado" : "RG/CPF Pendente"} 
+                            className={`material-symbols-outlined text-lg ${c.cnh_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                          >
+                            badge
+                          </span>
+                          <span 
+                            title={c.address_proof_url ? "Comprovante de Residência Anexado" : "Comprovante de Residência Pendente"} 
+                            className={`material-symbols-outlined text-lg ${c.address_proof_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                          >
+                            home_pin
+                          </span>
+                          <span 
+                            title={c.selfie_url ? "Selfie Anexada" : "Selfie Pendente"} 
+                            className={`material-symbols-outlined text-lg ${c.selfie_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                          >
+                            add_a_photo
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{c.city} / {c.state}</td>
                       <td className="px-6 py-4">
@@ -373,29 +391,6 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                       value={formData.phone} onChange={e => setFormData({ ...formData, phone: handlePhoneMask(e.target.value) })}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Número CNH</label>
-                    <input
-                      className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white uppercase"
-                      placeholder="CNH" type="text" required
-                      value={formData.cnh_number} onChange={e => setFormData({ ...formData, cnh_number: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Categoria / Vencimento</label>
-                    <div className="flex gap-2">
-                      <input
-                        className="w-1/3 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white uppercase"
-                        placeholder="Cat" type="text" required
-                        value={formData.cnh_category} onChange={e => setFormData({ ...formData, cnh_category: e.target.value.toUpperCase() })}
-                      />
-                      <input
-                        className="flex-1 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white"
-                        type="date" required
-                        value={formData.cnh_expiration} onChange={e => setFormData({ ...formData, cnh_expiration: e.target.value })}
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -461,7 +456,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Foto/PDF CNH</label>
+                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Foto/PDF do RG/CPF</label>
                     <div className="flex items-center justify-center w-full">
                       <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${attachedFiles.cnh
                         ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20'
@@ -472,7 +467,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                             {attachedFiles.cnh ? 'check_circle' : 'upload_file'}
                           </span>
                           <p className={`text-xs font-semibold truncate w-full ${attachedFiles.cnh ? 'text-emerald-600' : ''}`}>
-                            {attachedFiles.cnh?.name || 'Anexar CNH'}
+                            {attachedFiles.cnh?.name || 'Anexar RG/CPF'}
                           </p>
                         </div>
                         <input
