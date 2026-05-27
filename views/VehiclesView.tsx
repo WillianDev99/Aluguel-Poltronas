@@ -29,6 +29,7 @@ const initialState: Omit<Vehicle, 'id'> = {
   chassis: '',
   default_security_deposit: 0,
   default_insurance_value: 0,
+  daily_rate: 0,
   image_url: null
 };
 
@@ -45,6 +46,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
     setFormData({
       ...initialState,
       ...data,
+      daily_rate: data.daily_rate || 0,
       image_url: data.image_url || null
     });
     setEditingId(id);
@@ -59,21 +61,14 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
   };
 
   const uploadFile = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `vehicles/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('clients-docs')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('clients-docs')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,6 +134,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Nº de Série</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Ano</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoria</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Valor Diária</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Ação</th>
                 </tr>
@@ -165,6 +161,9 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{v.year}</td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 text-xs font-semibold bg-primary/5 text-primary dark:text-accent-sunshine border border-primary/20 rounded-full">{v.category}</span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-350">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v.daily_rate || 0)}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold ${v.status === 'Disponível' ? 'bg-green-100 text-green-700' :
@@ -464,6 +463,16 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({ vehicles, onAddVehicle, onU
                     required
                     value={formData.default_insurance_value}
                     onChange={e => setFormData({ ...formData, default_insurance_value: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Valor da Diária Padrão (R$)</label>
+                  <input
+                    className="w-full h-12 rounded-lg border-gray-200 dark:border-gray-800 dark:bg-background-dark focus:ring-primary focus:border-primary text-slate-900 dark:text-white p-3"
+                    type="number"
+                    required
+                    value={formData.daily_rate}
+                    onChange={e => setFormData({ ...formData, daily_rate: Number(e.target.value) })}
                   />
                 </div>
               </div>

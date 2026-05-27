@@ -16,7 +16,8 @@ export const vehicleSchema = z.object({
     chassis: z.string().min(17, 'Chassis inválido'),
     default_security_deposit: z.number().min(0, 'Valor de caução inválido'),
     default_insurance_value: z.number().min(0, 'Valor de seguro inválido'),
-    image_url: z.string().url().optional().or(z.string().nullable())
+    daily_rate: z.number().min(0, 'Valor de diária inválido'),
+    image_url: z.string().optional().or(z.string().nullable())
 });
 
 export type VehicleFormData = z.infer<typeof vehicleSchema>;

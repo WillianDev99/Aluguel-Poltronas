@@ -66,6 +66,7 @@ export interface Vehicle {
   chassis: string;
   default_security_deposit: number;
   default_insurance_value: number;
+  daily_rate?: number;
   image_url?: string;
 }
 
@@ -91,6 +92,7 @@ export interface Reservation {
   return_photos?: string[];
   actual_return_date?: string;
   return_checklist?: VehicleChecklist;
+  origin?: 'painel' | 'site';
   // UI Helper fields (not in DB)
   clientName?: string;
   vehicleModel?: string;

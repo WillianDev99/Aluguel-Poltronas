@@ -17,14 +17,21 @@ const ClientsView = React.lazy(() => import('./views/ClientsView'));
 const VehiclesView = React.lazy(() => import('./views/VehiclesView'));
 const ReservationsView = React.lazy(() => import('./views/ReservationsView'));
 const UsersView = React.lazy(() => import('./views/UsersView'));
-const ProgressiveDiscountsView = React.lazy(() => import('./views/ProgressiveDiscountsView'));
-const IntegrationsView = React.lazy(() => import('./views/IntegrationsView'));
-
 // Components
 import Layout from './components/Layout';
 import VoucherModal from './components/VoucherModal';
 import ReservationModal from './components/ReservationModal';
 import ProfileModal from './components/ProfileModal';
+
+const sanitizeEmptyStrings = <T extends Record<string, any>>(obj: T): T => {
+  const sanitized = { ...obj } as any;
+  for (const key in sanitized) {
+    if (sanitized[key] === '') {
+      sanitized[key] = null;
+    }
+  }
+  return sanitized;
+};
 
 const MainContent: React.FC = () => {
   const { session, profile, isDarkMode, toggleDarkMode, logout, repairSession } = useApp();
@@ -133,12 +140,12 @@ const MainContent: React.FC = () => {
               clients={clients}
               isLoading={isLoading}
               onAddClient={async (c) => {
-                const { data, error } = await supabase.from('clients').insert([c]).select();
+                const { data, error } = await supabase.from('clients').insert([sanitizeEmptyStrings(c)]).select();
                 if (error) throw error;
                 if (data && data[0]) setClients(prev => [data[0], ...prev]);
               }}
               onUpdateClient={async (id, c) => {
-                const { data, error } = await supabase.from('clients').update(c).eq('id', id).select();
+                const { data, error } = await supabase.from('clients').update(sanitizeEmptyStrings(c)).eq('id', id).select();
                 if (error) throw error;
                 if (data && data[0]) setClients(prev => prev.map(item => item.id === id ? data[0] : item));
               }}
@@ -154,12 +161,12 @@ const MainContent: React.FC = () => {
               vehicles={vehicles}
               isLoading={isLoading}
               onAddVehicle={async (v) => {
-                const { data, error } = await supabase.from('vehicles').insert([v]).select();
+                const { data, error } = await supabase.from('vehicles').insert([sanitizeEmptyStrings(v)]).select();
                 if (error) throw error;
                 if (data && data[0]) setVehicles(prev => [data[0], ...prev]);
               }}
               onUpdateVehicle={async (id, v) => {
-                const { data, error } = await supabase.from('vehicles').update(v).eq('id', id).select();
+                const { data, error } = await supabase.from('vehicles').update(sanitizeEmptyStrings(v)).eq('id', id).select();
                 if (error) throw error;
                 if (data && data[0]) setVehicles(prev => prev.map(item => item.id === id ? data[0] : item));
               }}
@@ -178,7 +185,7 @@ const MainContent: React.FC = () => {
               isLoading={isLoading}
               onEmitVoucher={setSelectedVoucherRes}
               onUpdateReservation={async (id, updates) => {
-                const { data, error } = await supabase.from('reservations').update(updates).eq('id', id).select('*');
+                const { data, error } = await supabase.from('reservations').update(sanitizeEmptyStrings(updates)).eq('id', id).select('*');
                 if (error) throw error;
                 if (data && data[0]) {
                   const client = clients.find(c => c.id === data[0].client_id);
@@ -194,7 +201,7 @@ const MainContent: React.FC = () => {
                 }
               }}
               onAddReservation={async (r) => {
-                const { data, error } = await supabase.from('reservations').insert([r]).select('*');
+                const { data, error } = await supabase.from('reservations').insert([sanitizeEmptyStrings(r)]).select('*');
                 if (error) throw error;
                 if (data && data[0]) {
                   const client = clients.find(c => c.id === data[0].client_id);
@@ -216,9 +223,7 @@ const MainContent: React.FC = () => {
               }}
             />
           } />
-          <Route path="/discounts" element={<ProgressiveDiscountsView />} />
           <Route path="/users" element={profile?.role === 'admin' ? <UsersView /> : <Navigate to="/dashboard" replace />} />
-          <Route path="/integrations" element={<IntegrationsView />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </ErrorBoundary>
@@ -238,7 +243,7 @@ const MainContent: React.FC = () => {
           vehicles={vehicles}
           onClose={() => setIsReservationModalOpen(false)}
           onSave={async (r) => {
-            const { data, error } = await supabase.from('reservations').insert([r]).select('*');
+            const { data, error } = await supabase.from('reservations').insert([sanitizeEmptyStrings(r)]).select('*');
             if (error) throw error;
             if (data && data[0]) {
               const client = clients.find(c => c.id === data[0].client_id);

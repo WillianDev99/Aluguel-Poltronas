@@ -42,7 +42,6 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
         status: ReservationStatus.AGUARDANDO
     });
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
-    const [progressiveDiscounts, setProgressiveDiscounts] = useState<ProgressiveDiscount[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [occupiedRanges, setOccupiedRanges] = useState<{ start: Date; end: Date }[]>([]);
     const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
@@ -50,14 +49,6 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
 
     const availableVehicles = vehicles.filter(v => v.status === 'Disponível');
     const activeClients = clients.filter(c => c.status === 'Ativo');
-
-    useEffect(() => {
-        const fetchDiscounts = async () => {
-            const { data } = await supabase.from('progressive_discounts').select('*').order('day', { ascending: true });
-            if (data) setProgressiveDiscounts(data);
-        };
-        fetchDiscounts();
-    }, []);
 
     const fetchAvailability = async (vehicleId: string, signal?: { aborted: boolean }) => {
         setIsLoadingAvailability(true);
@@ -127,15 +118,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
         const diffTime = Math.abs(returnD.getTime() - pickup.getTime());
         const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 
-        // Lógica de Desconto Acumulativo
-        let currentDailyRate = formData.base_rate;
-        for (let i = 2; i <= days; i++) {
-            const discount = progressiveDiscounts.find(d => d.day === i);
-            if (discount) {
-                currentDailyRate = currentDailyRate * (1 - (discount.discount_percent / 100));
-            }
-        }
-
+        const currentDailyRate = formData.base_rate;
         let subtotal = days * currentDailyRate;
 
         let servicesTotal = 0;
@@ -187,6 +170,37 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
 
         setIsSubmitting(true);
         try {
+            // Verificar overlap de data para a poltrona selecionada
+            const { data: conflicts, error: checkError } = await supabase
+                .from('reservations')
+                .select('id, pickup_date, return_date, status')
+                .eq('vehicle_id', formData.vehicle_id)
+                .neq('status', 'reserva cancelada')
+                .neq('status', 'reserva perdida')
+                .neq('status', 'locação concluída');
+
+            if (checkError) throw checkError;
+
+            if (conflicts) {
+                const newPickup = new Date(formData.pickup_date);
+                const newReturn = new Date(formData.return_date);
+                
+                const overlap = conflicts.find(res => {
+                    const resPickup = new Date(res.pickup_date);
+                    const resReturn = new Date(res.return_date);
+                    return newPickup < resReturn && resPickup < newReturn;
+                });
+
+                if (overlap) {
+                    const fmtDate = (dStr: string) => new Date(dStr).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    toast.error(`Esta poltrona já está reservada para o período de ${fmtDate(overlap.pickup_date)} a ${fmtDate(overlap.return_date)}.`);
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             await onSave(dataToSave);
             onClose();
         } catch (error: any) {
@@ -307,43 +321,28 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Desconto Progressivo</h3>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <p className="text-xs text-slate-500 font-medium mb-2">O desconto é aplicado acumulativamente dia após dia conforme configurado no sistema.</p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Diária Final Calculada:</span>
-                                    <span className="text-sm font-black text-primary dark:text-accent-sunshine">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentDailyRate)}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Serviços e Acessórios Adicionais</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {ADDITIONAL_SERVICES.map(service => (
+                                <label 
+                                    key={service.id}
+                                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${selectedServices.includes(service.id) ? 'bg-primary/5 border-primary/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <input 
+                                            type="checkbox"
+                                            className="rounded border-slate-300 text-primary focus:ring-primary"
+                                            checked={selectedServices.includes(service.id)}
+                                            onChange={() => handleServiceToggle(service.id)}
+                                        />
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{service.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-primary dark:text-accent-sunshine">
+                                        R$ {service.price.toFixed(2)} {service.type === 'daily' ? '/dia' : ''}
                                     </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Serviços e Acessórios Adicionais</h3>
-                            <div className="space-y-2">
-                                {ADDITIONAL_SERVICES.map(service => (
-                                    <label 
-                                        key={service.id}
-                                        className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${selectedServices.includes(service.id) ? 'bg-primary/5 border-primary/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <input 
-                                                type="checkbox"
-                                                className="rounded border-slate-300 text-primary focus:ring-primary"
-                                                checked={selectedServices.includes(service.id)}
-                                                onChange={() => handleServiceToggle(service.id)}
-                                            />
-                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{service.name}</span>
-                                        </div>
-                                        <span className="text-[10px] font-black text-primary dark:text-accent-sunshine">
-                                            R$ {service.price.toFixed(2)} {service.type === 'daily' ? '/dia' : ''}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
+                                </label>
+                            ))}
                         </div>
                     </div>
 

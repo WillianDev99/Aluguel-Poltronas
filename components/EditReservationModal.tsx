@@ -45,19 +45,10 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
         reservation.additional_services ? reservation.additional_services.split(', ').filter(s => s) : []
     );
     
-    const [progressiveDiscounts, setProgressiveDiscounts] = useState<ProgressiveDiscount[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [occupiedRanges, setOccupiedRanges] = useState<{ start: Date; end: Date }[]>([]);
     const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
-
-    useEffect(() => {
-        const fetchDiscounts = async () => {
-            const { data } = await supabase.from('progressive_discounts').select('*').order('day', { ascending: true });
-            if (data) setProgressiveDiscounts(data);
-        };
-        fetchDiscounts();
-    }, []);
 
     const fetchAvailability = async (vehicleId: string) => {
         setIsLoadingAvailability(true);
@@ -109,14 +100,7 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
         const diffTime = Math.abs(returnD.getTime() - pickup.getTime());
         const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 
-        let currentDailyRate = formData.base_rate;
-        for (let i = 2; i <= days; i++) {
-            const discount = progressiveDiscounts.find(d => d.day === i);
-            if (discount) {
-                currentDailyRate = currentDailyRate * (1 - (discount.discount_percent / 100));
-            }
-        }
-
+        const currentDailyRate = formData.base_rate;
         let subtotal = days * currentDailyRate;
         let servicesTotal = 0;
         selectedServices.forEach(serviceId => {
@@ -159,6 +143,38 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
 
         setIsSubmitting(true);
         try {
+            // Verificar overlap de data para a poltrona selecionada (excluindo a própria reserva)
+            const { data: conflicts, error: checkError } = await supabase
+                .from('reservations')
+                .select('id, pickup_date, return_date, status')
+                .eq('vehicle_id', formData.vehicle_id)
+                .neq('id', reservation.id) // Excluir a si mesmo
+                .neq('status', 'reserva cancelada')
+                .neq('status', 'reserva perdida')
+                .neq('status', 'locação concluída');
+
+            if (checkError) throw checkError;
+
+            if (conflicts) {
+                const newPickup = new Date(formData.pickup_date);
+                const newReturn = new Date(formData.return_date);
+                
+                const overlap = conflicts.find(res => {
+                    const resPickup = new Date(res.pickup_date);
+                    const resReturn = new Date(res.return_date);
+                    return newPickup < resReturn && resPickup < newReturn;
+                });
+
+                if (overlap) {
+                    const fmtDate = (dStr: string) => new Date(dStr).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    toast.error(`Esta poltrona já está reservada para o período de ${fmtDate(overlap.pickup_date)} a ${fmtDate(overlap.return_date)}.`);
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             await onUpdate(reservation.id, dataToUpdate);
             onClose();
         } catch (error: any) {

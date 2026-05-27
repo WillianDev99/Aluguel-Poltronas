@@ -121,6 +121,7 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Retirada</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Devolução</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Origem</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
                 </tr>
@@ -142,6 +143,15 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.pickup_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.return_date)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                        res.origin === 'site'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200'
+                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-450 border-slate-200'
+                      }`}>
+                        {res.origin === 'site' ? 'Site / Online' : 'Painel / Balcão'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusStyle(res.status)}`}>
                         {res.status}
@@ -274,6 +284,15 @@ const InspectionPhotoGrid: React.FC<{
   );
 };
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 const PickupModal: React.FC<{ reservation: Reservation; onClose: () => void; onUpdate: (id: string, updates: Partial<Reservation>) => Promise<void>; }> = ({ reservation, onClose, onUpdate }) => {
   const [actualPickupDate, setActualPickupDate] = useState(() => new Date().toISOString().slice(0, 16));
   const [photos, setPhotos] = useState<Record<string, File | null>>({});
@@ -294,12 +313,8 @@ const PickupModal: React.FC<{ reservation: Reservation; onClose: () => void; onU
       const photoUrls: string[] = [];
       for (const slot of INSPECTION_SLOTS) {
         const file = photos[slot.id] as File;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `pickup_${reservation.id}_${slot.id}.${fileExt}`;
-        const { error } = await supabase.storage.from('clients-docs').upload(`inspections/${fileName}`, file);
-        if (error) throw error;
-        const { data } = supabase.storage.from('clients-docs').getPublicUrl(`inspections/${fileName}`);
-        photoUrls.push(data.publicUrl);
+        const base64Url = await fileToBase64(file);
+        photoUrls.push(base64Url);
       }
 
       await onUpdate(reservation.id, {
@@ -360,12 +375,8 @@ const ReturnModal: React.FC<{ reservation: Reservation; onClose: () => void; onU
       const photoUrls: string[] = [];
       for (const slot of INSPECTION_SLOTS) {
         const file = photos[slot.id] as File;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `return_${reservation.id}_${slot.id}.${fileExt}`;
-        const { error } = await supabase.storage.from('clients-docs').upload(`inspections/${fileName}`, file);
-        if (error) throw error;
-        const { data } = supabase.storage.from('clients-docs').getPublicUrl(`inspections/${fileName}`);
-        photoUrls.push(data.publicUrl);
+        const base64Url = await fileToBase64(file);
+        photoUrls.push(base64Url);
       }
 
       await onUpdate(reservation.id, {

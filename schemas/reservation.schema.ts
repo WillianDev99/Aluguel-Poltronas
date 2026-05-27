@@ -26,6 +26,7 @@ export const reservationSchema = z.object({
         hasIssue: z.boolean(),
         observation: z.string()
     })).optional(),
+    origin: z.enum(['painel', 'site']).optional(),
     status: z.string(),
     days: z.number().min(1),
     total_value: z.number().min(0)

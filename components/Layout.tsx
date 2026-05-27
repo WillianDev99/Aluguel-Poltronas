@@ -21,9 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
     { id: 'CLIENTS', path: '/clients', label: 'Clientes', icon: 'group', roles: ['admin', 'user'] },
     { id: 'VEHICLES', path: '/vehicles', label: 'Poltronas', icon: 'chair', roles: ['admin', 'user'] },
     { id: 'RESERVATIONS', path: '/reservations', label: 'Reservas', icon: 'calendar_today', roles: ['admin', 'user'] },
-    { id: 'DISCOUNTS', path: '/discounts', label: 'Desconto Progressivo', icon: 'trending_down', roles: ['admin', 'user'] },
     { id: 'USERS', path: '/users', label: 'Usuários', icon: 'manage_accounts', roles: ['admin'] },
-    { id: 'INTEGRATIONS', path: '/integrations', label: 'Integrações', icon: 'api', roles: ['admin', 'user'] },
   ];
 
   const userRole = userProfile?.role || 'user';

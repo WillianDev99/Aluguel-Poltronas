@@ -41,9 +41,9 @@ export const clientSchema = z.object({
     status: z.enum(['Ativo', 'Inativo', 'Pendente', 'Inadimplente']),
     vip: z.boolean(),
     score: z.number().min(0).max(100),
-    cnh_url: z.string().nullable().or(z.string().url()).optional(),
-    address_proof_url: z.string().nullable().or(z.string().url()).optional(),
-    selfie_url: z.string().nullable().or(z.string().url()).optional()
+    cnh_url: z.string().nullable().or(z.string()).optional(),
+    address_proof_url: z.string().nullable().or(z.string()).optional(),
+    selfie_url: z.string().nullable().or(z.string()).optional()
 });
 
 export type ClientFormData = z.infer<typeof clientSchema>;
