@@ -4,6 +4,7 @@ import { Reservation, Client, Vehicle } from '../types';
 import html2pdf from 'html2pdf.js';
 import { PDFDocument } from 'pdf-lib';
 import toast from 'react-hot-toast';
+import posleveLogoText from '../src/assets/posleve_logo_text.png';
 
 interface VoucherModalProps {
   reservation: Reservation;
@@ -11,6 +12,14 @@ interface VoucherModalProps {
   vehicle: Vehicle | undefined;
   onClose: () => void;
 }
+
+const getImageUrl = (url?: string | null) => {
+  if (!url) return '';
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) {
+    return url;
+  }
+  return `/${url}`;
+};
 
 const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicle, onClose }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -40,7 +49,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
       currency: 'BRL'
     });
 
-  const voucherRef = `CC-${reservation.id.toString().substring(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
+  const voucherRef = `PL-${reservation.id.toString().substring(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
 
   const handlePrint = () => {
     window.print();
@@ -151,18 +160,13 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
           </div>
         </div>
 
-        <div className="bg-white text-slate-900 font-sans" id="voucher-content" style={{ width: '210mm', margin: '0 auto' }}>
+        <div className="w-full overflow-x-auto p-2 md:p-0 flex justify-start md:justify-center">
+          <div className="bg-white text-slate-900 font-sans min-w-[210mm] sm:min-w-0" id="voucher-content" style={{ width: '210mm', margin: '0 auto' }}>
           {/* PÁGINA 1: DADOS DA RESERVA */}
           <div className="p-[15mm] md:p-[20mm] relative flex flex-col box-border" style={{ pageBreakAfter: 'always', height: '296mm' }}>
             <div className="flex items-center justify-between mb-6 border-b-4 border-primary pb-4">
               <div className="flex items-center gap-6">
-                <div className="bg-primary p-3 rounded-xl shadow-lg flex items-center justify-center" style={{ backgroundColor: '#0f766e' }}>
-                  <span className="material-symbols-outlined text-4xl text-white">chair</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">ComfortCare</h1>
-                  <p className="text-[10px] text-primary font-bold tracking-widest uppercase mt-1">Aluguel de Poltronas Pós-Cirúrgicas</p>
-                </div>
+                <img src={posleveLogoText} className="h-16 w-auto object-contain" alt="PÓS LEVE" />
               </div>
               <div className="text-right">
                 <h2 className="text-lg font-black text-primary">VOUCHER</h2>
@@ -202,7 +206,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                 </div>
                 <div className="grid grid-cols-3 gap-6 px-4">
                   <div className="col-span-2 flex gap-4">
-                    {vehicle?.image_url && <img src={vehicle.image_url} crossOrigin="anonymous" className="w-32 h-20 object-cover rounded-lg border border-slate-200" />}
+                    {vehicle?.image_url && <img src={getImageUrl(vehicle.image_url)} crossOrigin="anonymous" className="w-32 h-20 object-cover rounded-lg border border-slate-200" />}
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Modelo / Categoria</p>
                       <p className="text-sm font-bold uppercase text-slate-900">{vehicle?.model || reservation.vehicleModel} - {vehicle?.category || '---'}</p>
@@ -249,7 +253,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Garantia Hospitalar</p>
                     <p className="text-sm font-black text-emerald-700 uppercase">Incluso</p>
                   </div>
-                  <div className="col-span-3 bg-[#0f766e] p-5 rounded-2xl shadow-lg flex items-center justify-center gap-10 mt-2">
+                  <div className="col-span-3 bg-[#1b4e52] p-5 rounded-2xl shadow-lg flex items-center justify-center gap-10 mt-2">
                     <div className="text-center">
                       <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-0">Total da Locação</p>
                       <p className="text-[9px] text-white/50 leading-none">(Diárias totais + adicionais)</p>
@@ -305,25 +309,26 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
 
           {/* PÁGINA 3: ORIENTAÇÕES (TÓPICO 05) */}
           <div className="p-[20mm] relative flex flex-col bg-slate-50 box-border" style={{ pageBreakAfter: 'always', height: '296mm' }}>
-            <div className="bg-primary text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full" style={{ backgroundColor: '#0f766e' }}>
+            <div className="bg-primary text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full" style={{ backgroundColor: '#1b4e52' }}>
               <span className="material-symbols-outlined">info</span>
               <h3 className="text-sm font-black uppercase tracking-[0.2em]">05. Orientações sobre a Locação</h3>
             </div>
 
             <div className="space-y-8 text-[11px] leading-relaxed text-slate-700 flex-1">
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Informações Importantes</h4>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#1b4e52' }}>Informações Importantes</h4>
                 <ul className="list-disc pl-5 space-y-2">
                   <li>Por favor, verifique todos os detalhes e discriminações de serviços e acessórios adicionais contratados antes de assinar o termo de locação.</li>
                   <li><strong>Uso em Ambiente Limpo:</strong> A poltrona deve ser mantida em local seco e livre de poeira para evitar contaminações no estofado.</li>
                   <li>No método de pagamento parcelado, o cancelamento até 48h antes da entrega ou não comparecimento poderá acarretar retenção de custos logísticos.</li>
+                  <li><strong>Garantia de Reserva:</strong> A reserva deste equipamento só será efetivamente confirmada e garantida mediante o pagamento do caução de segurança. Até que o pagamento seja comprovado, as datas selecionadas continuarão disponíveis para locação.</li>
                 </ul>
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Prazo para Entrega / Recebimento</h4>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#1b4e52' }}>Prazo para Entrega / Recebimento</h4>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li><strong>Tolerância de Recebimento:</strong> A ComfortCare garante a entrega no horário agendado com tolerância de até 30 minutos por parte do cliente para recebimento e assinatura.</li>
+                  <li><strong>Tolerância de Recebimento:</strong> A PÓS LEVE garante a entrega no horário agendado com tolerância de até 30 minutos por parte do cliente para recebimento e assinatura.</li>
                   <li>O não comparecimento do responsável no local de entrega resultará no retorno do equipamento e cobrança de nova taxa de frete.</li>
                   <li><strong>Requisitos para o recebimento:</strong> para receber a poltrona, é necessário cumprir os requisitos da locadora:
                     <ul className="list-circle pl-5 mt-2 space-y-1">
@@ -336,31 +341,31 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Instruções de Entrega & Instalação</h4>
-                <p>A poltrona será entregue e instalada no endereço indicado pelo cliente, com suporte de nossa sede operacional situada na <strong>Rua Monsenhor Franklin, nº 354, Centro, Tianguá-CE</strong>.</p>
-                <p className="mt-2">A entrega e instalação em áreas urbanas de Tianguá-CE não possuem taxa extra. Para zonas rurais e outras cidades da região da Ibiapaba, aplicam-se taxas de deslocamento conforme tabela vigente.</p>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#1b4e52' }}>Instruções de Entrega & Instalação</h4>
+                <p>A poltrona será entregue e instalada no endereço indicado pelo cliente, com suporte de nossa sede operacional em <strong>Fortaleza - CE</strong>.</p>
+                <p className="mt-2">A entrega e instalação em áreas urbanas de Fortaleza-CE não possuem taxa extra. Para outras regiões metropolitanas, aplicam-se taxas de deslocamento conforme tabela vigente.</p>
               </section>
 
               <section>
-                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#0f766e' }}>Instruções de Coleta</h4>
+                <h4 className="text-[13px] font-black text-primary uppercase border-b border-primary/20 pb-1 mb-3" style={{ color: '#1b4e52' }}>Instruções de Coleta</h4>
                 <p>A coleta da poltrona será realizada por nossa equipe técnica no mesmo endereço de entrega ao término do contrato, em data e horário previamente agendados.</p>
                 <div className="mt-4 p-4 bg-white rounded-lg border border-slate-200">
-                  <h5 className="font-black text-primary uppercase text-[11px] mb-2" style={{ color: '#0f766e' }}>Cuidados no Uso</h5>
+                  <h5 className="font-black text-primary uppercase text-[11px] mb-2" style={{ color: '#1b4e52' }}>Cuidados no Uso</h5>
                   <p>Evite o uso de objetos cortantes ou produtos químicos corrosivos no estofado. Limpe apenas com pano levemente umedecido em água e sabão neutro.</p>
                 </div>
               </section>
             </div>
 
             <div className="mt-auto text-center border-t border-slate-200 pt-6">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">COMFORTCARE - Tianguá, CE</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PÓS LEVE - Fortaleza, CE</p>
             </div>
           </div>
 
-          {/* PÁGINA 4: GARANTIA COMFORTCARE (TÓPICO 06) */}
+          {/* PÁGINA 4: GARANTIA PÓS LEVE (TÓPICO 06) */}
           <div className="p-[20mm] relative flex flex-col box-border" style={{ height: '296mm' }}>
             <div className="bg-emerald-600 text-white px-6 py-2 rounded-xl mb-10 flex items-center gap-3 w-full">
               <span className="material-symbols-outlined">verified_user</span>
-              <h3 className="text-sm font-black uppercase tracking-[0.2em]">06. Garantia & Suporte ComfortCare</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.2em]">06. Garantia & Suporte PÓS LEVE</h3>
             </div>
 
             <div className="flex-1">
@@ -390,7 +395,7 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     Condições Gerais
                   </h5>
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-                    A Garantia & Cobertura de Higiene ComfortCare já está inclusa no valor da sua locação. Ela oferece cobertura abrangente para os itens listados acima, 
+                    A Garantia & Cobertura de Higiene PÓS LEVE já está inclusa no valor da sua locação. Ela oferece cobertura abrangente para os itens listados acima, 
                     sujeito às condições contratuais de conservação básica e normas de segurança sanitária. 
                     Em caso de qualquer falha mecânica ou elétrica, entre em contato imediatamente com nossa assistência rápida pelo telefone corporativo.
                   </p>
@@ -399,10 +404,11 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
             </div>
 
             <div className="mt-auto text-center border-t border-slate-100 pt-6">
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">COMFORTCARE - Higienização & Suporte Hospitalar</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">PÓS LEVE - Higienização & Suporte Hospitalar</p>
             </div>
           </div>
 
+          </div>
         </div>
       </div>
     </div>

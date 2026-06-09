@@ -150,7 +150,7 @@ const UsersView: React.FC = () => {
     };
 
     return (
-        <div className="p-8 max-w-6xl mx-auto space-y-8">
+        <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
             <div className="flex flex-wrap justify-between items-end gap-4">
                 <div className="space-y-1">
                     <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Gerenciar Usuários</h2>
@@ -182,7 +182,7 @@ const UsersView: React.FC = () => {
                                 <input
                                     type="email"
                                     className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white"
-                                    placeholder="email@comfortcare.com"
+                                    placeholder="email@posleve.com.br"
                                     required
                                     value={newEmail}
                                     onChange={e => setNewEmail(e.target.value)}
@@ -246,7 +246,7 @@ const UsersView: React.FC = () => {
                                         </tr>
                                     ) : users.map((u) => (
                                         <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
                                                         }`}>
@@ -258,7 +258,7 @@ const UsersView: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${u.role === 'admin'
                                                         ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                                         : 'bg-slate-100 text-slate-800 border border-slate-200'
@@ -266,10 +266,10 @@ const UsersView: React.FC = () => {
                                                     {u.role === 'admin' ? 'Gerente' : 'Operador'}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-xs text-slate-550 dark:text-slate-400">
+                                            <td className="px-6 py-4 text-xs text-slate-550 dark:text-slate-400 whitespace-nowrap">
                                                 {new Date(u.created_at).toLocaleDateString('pt-BR')} {new Date(u.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                             </td>
-                                            <td className="px-6 py-4 text-right space-x-2">
+                                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                                 <button
                                                     onClick={() => {
                                                         setEditingUser(u);

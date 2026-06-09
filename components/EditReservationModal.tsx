@@ -29,10 +29,124 @@ const INSURANCE_COVERAGES = [
     "TESTE DE SEGURANÇA E PARADAS DE EMERGÊNCIA REALIZADOS ANTES DA ENTREGA"
 ];
 
+const getAvailableCountForPeriod = (pickupStr: string, returnStr: string, resList: any[]) => {
+    if (!pickupStr || !returnStr) return 5;
+    const S = new Date(pickupStr);
+    const E = new Date(returnStr);
+    if (E <= S) return 0;
+
+    const sTime = S.getTime();
+    const eTime = E.getTime();
+
+    let currentOccupancy = 0;
+    const events: { time: number; type: 'pickup' | 'return' }[] = [];
+
+    for (const res of resList) {
+        const resPickup = new Date(res.pickup_date).getTime();
+        const resReturn = new Date(res.return_date).getTime();
+
+        const overlaps = sTime < resReturn && resPickup < eTime;
+        if (!overlaps) continue;
+
+        if (resPickup <= sTime && resReturn > sTime) {
+            currentOccupancy++;
+        }
+
+        if (resPickup > sTime && resPickup < eTime) {
+            events.push({ time: resPickup, type: 'pickup' });
+        }
+        if (resReturn > sTime && resReturn < eTime) {
+            events.push({ time: resReturn, type: 'return' });
+        }
+    }
+
+    events.sort((a, b) => {
+        if (a.time !== b.time) return a.time - b.time;
+        return a.type === 'return' ? -1 : 1;
+    });
+
+    let maxOccupancy = currentOccupancy;
+    for (const event of events) {
+        if (event.type === 'pickup') {
+            currentOccupancy++;
+        } else {
+            currentOccupancy--;
+        }
+        if (currentOccupancy > maxOccupancy) {
+            maxOccupancy = currentOccupancy;
+        }
+    }
+
+    return Math.max(0, 5 - maxOccupancy);
+};
+
+const getOccupiedRangesForCalendar = (Q: number, resList: any[]) => {
+    const ranges: { start: Date; end: Date }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentRangeStart: Date | null = null;
+    let currentRangeEnd: Date | null = null;
+
+    for (let i = 0; i < 180; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+
+        const midDay = new Date(d);
+        midDay.setHours(12, 0, 0, 0);
+
+        const avail = getAvailableCountForPeriod(midDay.toISOString(), new Date(midDay.getTime() + 1000).toISOString(), resList);
+
+        if (avail < Q) {
+            if (currentRangeStart === null) {
+                currentRangeStart = d;
+            }
+            currentRangeEnd = d;
+        } else {
+            if (currentRangeStart !== null && currentRangeEnd !== null) {
+                ranges.push({
+                    start: new Date(currentRangeStart),
+                    end: new Date(currentRangeEnd)
+                });
+                currentRangeStart = null;
+                currentRangeEnd = null;
+            }
+        }
+    }
+
+    if (currentRangeStart !== null && currentRangeEnd !== null) {
+        ranges.push({
+            start: new Date(currentRangeStart),
+            end: new Date(currentRangeEnd)
+        });
+    }
+
+    return ranges;
+};
+
+const getAvailableVehicleForPeriod = (pickupStr: string, returnStr: string, resList: any[], allVehicles: Vehicle[]) => {
+    const S = new Date(pickupStr).getTime();
+    const E = new Date(returnStr).getTime();
+
+    const reservedVehicleIds = new Set<string>();
+    for (const res of resList) {
+        const resPickup = new Date(res.pickup_date).getTime();
+        const resReturn = new Date(res.return_date).getTime();
+        const overlaps = S < resReturn && resPickup < E;
+        // Non-blocking reservations (pending deposit) do not reduce pool availability
+        const isBlocking = res.status === 'locação em uso' || (res.status === 'aguardando retirada' && res.observations?.includes('[CAUCAO_PAGO]'));
+        if (overlaps && isBlocking) {
+            reservedVehicleIds.add(res.vehicle_id);
+        }
+    }
+
+    return allVehicles.find(v => !reservedVehicleIds.has(v.id) && v.status !== 'Desativado');
+};
+
 const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation, clients, vehicles, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         client_id: reservation.client_id,
-        vehicle_id: reservation.vehicle_id,
+        vehicle_id: reservation.vehicle_id || vehicles[0]?.id || '',
         pickup_date: reservation.pickup_date,
         return_date: reservation.return_date,
         base_rate: reservation.daily_rate, // Usamos a diária salva como base inicial
@@ -49,41 +163,35 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
     const [occupiedRanges, setOccupiedRanges] = useState<{ start: Date; end: Date }[]>([]);
     const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [allReservations, setAllReservations] = useState<any[]>([]);
 
-    const fetchAvailability = async (vehicleId: string) => {
+    const fetchAllReservations = async () => {
         setIsLoadingAvailability(true);
         try {
-            const data = await retryAsync(async () => {
-                const { data, error } = await supabase
-                    .from('reservations')
-                    .select('pickup_date, return_date')
-                    .eq('vehicle_id', vehicleId)
-                    .neq('id', reservation.id) // Excluir a própria reserva da busca de ocupação
-                    .neq('status', 'reserva cancelada')
-                    .neq('status', 'reserva perdida');
-
-                if (error) throw error;
-                return data;
-            });
-
-            if (data) {
-                setOccupiedRanges(data.map(r => ({
-                    start: new Date(r.pickup_date),
-                    end: new Date(r.return_date)
-                })));
-            }
+            const { data, error } = await supabase
+                .from('reservations')
+                .select('id, vehicle_id, pickup_date, return_date, status, observations')
+                .neq('id', reservation.id) // Excluir a própria reserva
+                .neq('status', 'reserva cancelada')
+                .neq('status', 'reserva perdida')
+                .neq('status', 'locação concluída');
+            if (error) throw error;
+            setAllReservations(data || []);
         } catch (err) {
-            console.error('Erro ao buscar disponibilidade:', err);
+            console.error('Error fetching reservations:', err);
         } finally {
             setIsLoadingAvailability(false);
         }
     };
 
     useEffect(() => {
-        if (formData.vehicle_id) {
-            fetchAvailability(formData.vehicle_id);
-        }
-    }, [formData.vehicle_id]);
+        fetchAllReservations();
+    }, []);
+
+    useEffect(() => {
+        const ranges = getOccupiedRangesForCalendar(1, allReservations);
+        setOccupiedRanges(ranges);
+    }, [allReservations]);
 
     const handleServiceToggle = (serviceId: string) => {
         setSelectedServices(prev => 
@@ -119,60 +227,49 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const dataToUpdate = {
-            client_id: formData.client_id,
-            vehicle_id: formData.vehicle_id,
-            pickup_date: formData.pickup_date,
-            return_date: formData.return_date,
-            daily_rate: currentDailyRate,
-            days: currentDays,
-            total_value: currentSubtotal,
-            security_deposit: formData.security_deposit,
-            status: formData.status,
-            observations: formData.observations,
-            additional_services: selectedServices.join(', '),
-            insurance_details: INSURANCE_COVERAGES.map(name => ({ name, value: 0, selected: true }))
-        };
-
-        const validation = reservationSchema.safeParse(dataToUpdate);
-        if (!validation.success) {
-            const firstError = validation.error.issues[0];
-            toast.error(`${String(firstError.path[0])}: ${firstError.message}`);
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            // Verificar overlap de data para a poltrona selecionada (excluindo a própria reserva)
-            const { data: conflicts, error: checkError } = await supabase
+            // Verificar overlap de data na reserva unificada em tempo real
+            const { data: activeRes, error: checkError } = await supabase
                 .from('reservations')
-                .select('id, pickup_date, return_date, status')
-                .eq('vehicle_id', formData.vehicle_id)
-                .neq('id', reservation.id) // Excluir a si mesmo
+                .select('id, vehicle_id, pickup_date, return_date, status, observations')
+                .neq('id', reservation.id) // Excluir a própria reserva
                 .neq('status', 'reserva cancelada')
                 .neq('status', 'reserva perdida')
                 .neq('status', 'locação concluída');
 
             if (checkError) throw checkError;
 
-            if (conflicts) {
-                const newPickup = new Date(formData.pickup_date);
-                const newReturn = new Date(formData.return_date);
-                
-                const overlap = conflicts.find(res => {
-                    const resPickup = new Date(res.pickup_date);
-                    const resReturn = new Date(res.return_date);
-                    return newPickup < resReturn && resPickup < newReturn;
-                });
+            const resList = activeRes || [];
+            const availableVehicle = getAvailableVehicleForPeriod(formData.pickup_date, formData.return_date, resList, vehicles);
 
-                if (overlap) {
-                    const fmtDate = (dStr: string) => new Date(dStr).toLocaleString('pt-BR', {
-                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    });
-                    toast.error(`Esta poltrona já está reservada para o período de ${fmtDate(overlap.pickup_date)} a ${fmtDate(overlap.return_date)}.`);
-                    setIsSubmitting(false);
-                    return;
-                }
+            if (!availableVehicle) {
+                toast.error('Infelizmente, todas as poltronas estão ocupadas neste período.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const dataToUpdate = {
+                client_id: formData.client_id,
+                vehicle_id: availableVehicle.id, // Mapeia para a cadeira física livre
+                pickup_date: formData.pickup_date,
+                return_date: formData.return_date,
+                daily_rate: currentDailyRate,
+                days: currentDays,
+                total_value: currentSubtotal,
+                security_deposit: formData.security_deposit,
+                status: formData.status,
+                observations: formData.observations,
+                additional_services: selectedServices.join(', '),
+                insurance_details: INSURANCE_COVERAGES.map(name => ({ name, value: 0, selected: true }))
+            };
+
+            const validation = reservationSchema.safeParse(dataToUpdate);
+            if (!validation.success) {
+                const firstError = validation.error.issues[0];
+                toast.error(`${String(firstError.path[0])}: ${firstError.message}`);
+                setIsSubmitting(false);
+                return;
             }
 
             await onUpdate(reservation.id, dataToUpdate);
@@ -192,8 +289,8 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-4xl rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 overflow-y-auto overflow-x-hidden flex flex-col">
                 <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-20 backdrop-blur-md">
                     <div>
                         <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Editar Reserva</h2>
@@ -210,13 +307,15 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona</label>
                             <select
                                 required
-                                className="w-full h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all dark:text-white"
+                                disabled
+                                className="w-full h-12 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all dark:text-white cursor-not-allowed"
                                 value={formData.vehicle_id}
-                                onChange={e => setFormData({ ...formData, vehicle_id: e.target.value })}
                             >
-                                {vehicles.map(v => (
-                                    <option key={v.id} value={v.id}>{v.model} (Série: {v.plate})</option>
-                                ))}
+                                {vehicles.length > 0 && (
+                                    <option value={vehicles[0].id}>
+                                        {vehicles[0].model} (Pool de Estoque)
+                                    </option>
+                                )}
                             </select>
                         </div>
 
@@ -248,7 +347,14 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
                             </button>
 
                             {showCalendar && (
-                                <div className="absolute top-full left-0 mt-2 z-[110]">
+                                <div 
+                                    className="fixed inset-0 sm:absolute sm:inset-auto sm:top-full sm:left-0 sm:mt-2 z-[110] flex items-center justify-center sm:block p-4 sm:p-0 bg-slate-900/60 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none"
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
+                                            setShowCalendar(false);
+                                        }
+                                    }}
+                                >
                                     <Calendar
                                         occupiedRanges={occupiedRanges}
                                         initialPickup={formData.pickup_date}
@@ -316,7 +422,7 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
                             <div className="flex items-center gap-3">
                                 <div className="size-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20"><span className="material-symbols-outlined">verified_user</span></div>
                                 <div>
-                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Garantia & Suporte ComfortCare</h3>
+                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Garantia & Suporte PÓS LEVE</h3>
                                     <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase">Proteção Hospitalar & Técnica Inclusa</p>
                                 </div>
                             </div>
@@ -343,7 +449,7 @@ const EditReservationModal: React.FC<EditReservationModalProps> = ({ reservation
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-[10px] text-emerald-600/60 font-medium">Diárias ({currentDays}x): {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentDays * currentDailyRate)}</span>
                                 {servicesTotal > 0 && <span className="text-[10px] text-primary/60 font-medium">Adicionais: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(servicesTotal)}</span>}
-                                <span className="text-[10px] text-emerald-600 font-bold">Garantia & Suporte ComfortCare: Incluso (R$ 0,00)</span>
+                                <span className="text-[10px] text-emerald-600 font-bold">Garantia & Suporte PÓS LEVE: Incluso (R$ 0,00)</span>
                             </div>
                         </div>
                     </div>

@@ -23,9 +23,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const repairSession = async () => {
         console.log('[Auth] Executando Hard Reset de sessão...');
-        localStorage.removeItem('comfortcare-mock-session');
+        localStorage.removeItem('posleve-mock-session');
         await supabase.auth.signOut();
-        localStorage.removeItem('comfortcare-auth-token');
+        localStorage.removeItem('posleve-auth-token');
         window.location.href = '/login';
         return true;
     };
@@ -36,7 +36,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const initializeAuth = async () => {
             try {
                 // Check if there is a mock session active
-                const mockSessionStr = localStorage.getItem('comfortcare-mock-session');
+                const mockSessionStr = localStorage.getItem('posleve-mock-session');
                 if (mockSessionStr) {
                     const mockSession = JSON.parse(mockSessionStr);
                     if (mounted) {
@@ -45,7 +45,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             id: mockSession.user.id,
                             email: mockSession.user.email,
                             role: 'admin',
-                            full_name: 'Administrador ComfortCare'
+                            full_name: 'Administrador PÓS LEVE'
                         });
                         setLoading(false);
                     }
@@ -89,7 +89,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             console.log(`[Auth] Evento: ${event}`);
             
             // Do not override if mock session exists
-            if (localStorage.getItem('comfortcare-mock-session')) {
+            if (localStorage.getItem('posleve-mock-session')) {
                 return;
             }
 
@@ -116,7 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
     const logout = async () => {
-        localStorage.removeItem('comfortcare-mock-session');
+        localStorage.removeItem('posleve-mock-session');
         await supabase.auth.signOut();
         setSession(null);
         setProfile(null);

@@ -85,7 +85,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
     const getDefaultFallback = () => `
         <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 30px; text-decoration: underline;">CONTRATO DE LOCAÇÃO DE POLTRONA E EQUIPAMENTO PÓS-CIRÚRGICO</div>
         
-        <p><strong>LOCADORA:</strong> COMFORTCARE LTDA, com sede na Rua Monsenhor Franklin, nº 354, Centro, Tianguá-CE.</p>
+        <p><strong>LOCADORA:</strong> PÓS LEVE LTDA, com sede em Fortaleza - CE.</p>
         
         <p><strong>LOCATÁRIO:</strong> {{CLIENT_NAME}}, portador do CPF {{CLIENT_CPF}} e RG {{CLIENT_RG}}, residente em {{CLIENT_ADDRESS}}.</p>
         
@@ -95,16 +95,16 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
         
         <p><strong>VALORES E CAUÇÃO:</strong> O valor total da locação do período é de {{TOTAL_VALUE}}. O locatário deposita neste ato o valor de {{SECURITY_DEPOSIT}} a título de garantia (caução).</p>
         
-        <p><strong>HIGIENIZAÇÃO E GARANTIA:</strong> A poltrona é entregue devidamente higienizada seguindo padrões hospitalares. O locatário responsabiliza-se pela conservação do estofado e mecanismos, com taxa de higienização de {{INSURANCE_VALUE}} inclusa.</p>
+        <p><strong>HIGIENIZAÇÃO E GARANTIA:</strong> A poltrona é entregue devidamente higienizada seguindo padrões hospitalares. O locatário responsabiliza-se pela conservação do estofado e mechanisms, com taxa de higienização de {{INSURANCE_VALUE}} inclusa.</p>
         
         <div style="text-align: center; margin-top: 60px; margin-bottom: 60px;">
-            Tianguá-CE, {{CURRENT_DATE}}
+            Fortaleza-CE, {{CURRENT_DATE}}
         </div>
         
         <div style="display: flex; justify-content: space-between; margin-top: 80px; padding: 0 40px;">
             <div style="text-align: center; width: 45%;">
                 <div style="border-top: 1px solid black; margin-bottom: 5px;"></div>
-                <div style="font-weight: bold; font-size: 11px;">COMFORTCARE</div>
+                <div style="font-weight: bold; font-size: 11px;">PÓS LEVE</div>
                 <div style="font-size: 10px;">Locadora</div>
             </div>
             <div style="text-align: center; width: 45%;">
@@ -144,7 +144,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             win.document.write(`
                 <html>
                     <head>
-                        <title>Contrato ComfortCare - ${client?.name}</title>
+                        <title>Contrato PÓS LEVE - ${client?.name}</title>
                         <style>
                             body { font-family: serif; padding: 40px; line-height: 1.6; color: #000; font-size: 12px; }
                             p { margin-bottom: 12px; text-align: justify; }
@@ -163,7 +163,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
     return (
         <div className="fixed inset-0 z-[110] bg-slate-100 flex flex-col animate-in fade-in duration-300">
-            <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm">
+            <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-sm">
                 <div className="flex items-center gap-4">
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                         <span className="material-symbols-outlined">arrow_back</span>
@@ -185,7 +185,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 </div>
             </header>
 
-            <div className="bg-slate-50 border-b border-slate-200 px-8 py-2 flex items-center gap-2 overflow-x-auto">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-8 py-2 flex items-center gap-2 overflow-x-auto">
                 <button onClick={() => execCommand('bold')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Negrito"><span className="material-symbols-outlined text-xl">format_bold</span></button>
                 <button onClick={() => execCommand('italic')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Itálico"><span className="material-symbols-outlined text-xl">format_italic</span></button>
                 <button onClick={() => execCommand('underline')} className="p-1.5 hover:bg-white rounded border border-transparent hover:border-slate-200" title="Sublinhado"><span className="material-symbols-outlined text-xl">format_underlined</span></button>
@@ -199,7 +199,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 <div 
                     ref={editorRef}
                     contentEditable
-                    className="w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl p-[20mm] outline-none prose prose-slate max-w-none"
+                    className="w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl p-[5mm] sm:p-[20mm] outline-none prose prose-slate max-w-none"
                     style={{ fontFamily: 'serif', fontSize: '12px' }}
                 />
             </div>

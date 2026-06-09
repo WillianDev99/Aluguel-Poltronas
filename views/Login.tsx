@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import posleveLogoText from '../src/assets/posleve_logo_text.png';
 
 interface LoginProps {
   onLogin: () => void;
@@ -24,10 +25,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const mockSession = {
         user: {
           id: 'c481dd65-85f1-41e0-bbe8-1a1c4a221fd0',
-          email: 'administrador@comfortcare.com.br'
+          email: 'administrador@posleve.com.br'
         }
       };
-      localStorage.setItem('comfortcare-mock-session', JSON.stringify(mockSession));
+      localStorage.setItem('posleve-mock-session', JSON.stringify(mockSession));
       toast.success('Login administrativo realizado com sucesso!');
       setTimeout(() => {
         window.location.href = '/dashboard';
@@ -37,7 +38,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       // Map the user's requested short password and email to compliant credentials behind the scenes
-      const authEmail = (email === 'adm@gmail.com') ? 'administrador@comfortcare.com.br' : email;
+      const authEmail = (email === 'adm@gmail.com') ? 'administrador@posleve.com.br' : email;
       const authPassword = (email === 'adm@gmail.com' && password === 'adm') ? 'adm123' : password;
 
       const { error } = await supabase.auth.signInWithPassword({
@@ -55,7 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors relative overflow-hidden">
+    <div className="bg-[#edf1f0] dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors relative overflow-hidden">
       {/* Glow Orbs para fundo */}
       <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -70,12 +71,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </button>
  
       <div className="w-full max-w-[460px] flex flex-col items-center relative z-10">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-2">
-            <span className="material-symbols-outlined text-white text-3xl">medical_services</span>
-          </div>
-          <h2 className="text-slate-900 dark:text-white text-2xl font-display font-black tracking-tight leading-none">ComfortCare</h2>
-          <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Portal Administrativo</p>
+        <div className="mb-6 flex flex-col items-center">
+          <img src={posleveLogoText} className="h-24 w-auto object-contain bg-white rounded-2xl p-2 border border-slate-150 shadow-sm" alt="PÓS LEVE" />
+          <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-3">Portal Administrativo</p>
         </div>
  
         <div className="w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800/80 p-8 sm:p-10 transition-all">
@@ -96,7 +94,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">mail</span>
                   <input
                     className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:border-primary h-12 placeholder:text-slate-400 pl-11 pr-4 text-sm font-semibold transition-all"
-                    placeholder="exemplo@comfortcare.com.br"
+                    placeholder="exemplo@posleve.com.br"
                     required
                     type="email"
                     value={email}
@@ -137,7 +135,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
  
             <div className="pt-4">
               <button
-                className={`w-full bg-gradient-to-r from-primary to-primary-hover text-white font-bold py-3.5 px-6 rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full bg-gradient-to-r from-accent-coral to-[#e28a73] text-primary font-black py-3.5 px-6 rounded-xl hover:shadow-lg hover:shadow-accent-coral/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 type="submit"
                 disabled={loading}
               >
@@ -160,7 +158,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <button className="hover:text-primary dark:hover:text-secondary transition-colors">Políticas</button>
             <button className="hover:text-primary dark:hover:text-secondary transition-colors">Termos</button>
           </div>
-          <p className="text-[10px] font-semibold">© 2026 ComfortCare. v1.0.0</p>
+          <p className="text-[10px] font-semibold">© 2026 PÓS LEVE. v1.0.0</p>
         </footer>
       </div>
     </div>

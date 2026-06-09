@@ -9,6 +9,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'comfortcare-auth-token' // Chave única para evitar conflitos com outros apps Supabase
+    storageKey: 'posleve-auth-token' // Chave única para evitar conflitos com outros apps Supabase
   }
 });

@@ -6,6 +6,7 @@ interface CalendarProps {
     onClose: () => void;
     initialPickup?: string;
     initialReturn?: string;
+    planDays?: number;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -13,7 +14,8 @@ const Calendar: React.FC<CalendarProps> = ({
     onSelectRange,
     onClose,
     initialPickup,
-    initialReturn
+    initialReturn,
+    planDays
 }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selection, setSelection] = useState<{ start: Date | null; end: Date | null }>({
@@ -87,6 +89,21 @@ const Calendar: React.FC<CalendarProps> = ({
     const handleDateClick = (date: Date) => {
         if (isOccupied(date) || isPast(date)) return;
 
+        if (planDays) {
+            const endDate = new Date(date.getTime() + planDays * 24 * 60 * 60 * 1000);
+            const hasConflict = occupiedRanges.some(range => {
+                const start = new Date(range.start);
+                return start >= date && start <= endDate;
+            });
+
+            if (hasConflict) {
+                alert("Conflito de datas: Algumas datas neste plano de " + planDays + " dias já possuem reservas.");
+                return;
+            }
+            setSelection({ start: date, end: endDate });
+            return;
+        }
+
         if (!selection.start || (selection.start && selection.end)) {
             setSelection({ start: date, end: null });
         } else {
@@ -115,7 +132,7 @@ const Calendar: React.FC<CalendarProps> = ({
     ];
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 w-[340px] animate-in fade-in zoom-in duration-200">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-[340px] sm:w-[340px] animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-slate-900 dark:text-white">
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}

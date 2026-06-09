@@ -174,7 +174,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Clientes Cadastrados</h2>
@@ -191,7 +191,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
 
       <section className="space-y-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto p-6">
+          <div className="overflow-x-auto p-4 sm:p-6">
             {isLoading ? (
               <TableSkeleton />
             ) : (
@@ -209,7 +209,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {clients.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
                             {c.name.split(' ').map(n => n[0]).join('')}
@@ -220,11 +220,11 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono whitespace-nowrap">
                         <div>{c.cpf}</div>
                         <div className="text-[10px] opacity-70">RG: {c.rg || 'N/A'}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         <div className="flex gap-2">
                           <span 
                             title={c.cnh_url ? "RG/CPF Anexado" : "RG/CPF Pendente"} 
@@ -246,14 +246,14 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{c.city} / {c.state}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">{c.city} / {c.state}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
                           }`}>
                           {c.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => {
                             setEditingClient(c);
@@ -312,9 +312,9 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
       </section>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto overflow-x-hidden">
-            <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30 flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-4xl rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-700 overflow-y-auto overflow-x-hidden flex flex-col">
+            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30 flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   {editingClient ? 'Editar Cliente' : 'Registrar Novo Cliente'}
@@ -330,7 +330,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form className="p-8 space-y-10" onSubmit={handleSubmit}>
+            <form className="p-4 sm:p-8 space-y-6 sm:space-y-10" onSubmit={handleSubmit}>
               <div>
                 <div className="flex items-center gap-2 mb-6 border-l-4 border-primary pl-3">
                   <span className="text-xs font-black text-primary dark:text-accent-sunshine uppercase tracking-widest">01. Dados Pessoais</span>
@@ -532,9 +532,9 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                 </div>
               </div>
 
-              <div className="flex justify-end items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-700">
+              <div className="flex flex-col-reverse sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-6 border-t border-slate-100 dark:border-slate-700">
                 <button
-                  className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+                  className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors w-full sm:w-auto"
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => { setIsModalOpen(false); resetForm(); }}
@@ -542,7 +542,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                   Cancelar
                 </button>
                 <button
-                  className="px-10 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 active:scale-95 disabled:opacity-50"
+                  className="px-10 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 w-full sm:w-auto"
                   type="submit"
                   disabled={isSubmitting}
                 >

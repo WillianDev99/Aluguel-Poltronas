@@ -28,15 +28,133 @@ const INSURANCE_COVERAGES = [
     "TESTE DE SEGURANÇA E PARADAS DE EMERGÊNCIA REALIZADOS ANTES DA ENTREGA"
 ];
 
+const getAvailableCountForPeriod = (pickupStr: string, returnStr: string, resList: any[]) => {
+    if (!pickupStr || !returnStr) return 5;
+    const S = new Date(pickupStr);
+    const E = new Date(returnStr);
+    if (E <= S) return 0;
+
+    const sTime = S.getTime();
+    const eTime = E.getTime();
+
+    let currentOccupancy = 0;
+    const events: { time: number; type: 'pickup' | 'return' }[] = [];
+
+    const blockingResList = resList.filter(res => {
+        return res.status === 'locação em uso' || (res.status === 'aguardando retirada' && res.observations?.includes('[CAUCAO_PAGO]'));
+    });
+
+    for (const res of blockingResList) {
+        const resPickup = new Date(res.pickup_date).getTime();
+        const resReturn = new Date(res.return_date).getTime();
+
+        const overlaps = sTime < resReturn && resPickup < eTime;
+        if (!overlaps) continue;
+
+        if (resPickup <= sTime && resReturn > sTime) {
+            currentOccupancy++;
+        }
+
+        if (resPickup > sTime && resPickup < eTime) {
+            events.push({ time: resPickup, type: 'pickup' });
+        }
+        if (resReturn > sTime && resReturn < eTime) {
+            events.push({ time: resReturn, type: 'return' });
+        }
+    }
+
+    events.sort((a, b) => {
+        if (a.time !== b.time) return a.time - b.time;
+        return a.type === 'return' ? -1 : 1;
+    });
+
+    let maxOccupancy = currentOccupancy;
+    for (const event of events) {
+        if (event.type === 'pickup') {
+            currentOccupancy++;
+        } else {
+            currentOccupancy--;
+        }
+        if (currentOccupancy > maxOccupancy) {
+            maxOccupancy = currentOccupancy;
+        }
+    }
+
+    return Math.max(0, 5 - maxOccupancy);
+};
+
+const getOccupiedRangesForCalendar = (Q: number, resList: any[]) => {
+    const ranges: { start: Date; end: Date }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentRangeStart: Date | null = null;
+    let currentRangeEnd: Date | null = null;
+
+    for (let i = 0; i < 180; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+
+        const midDay = new Date(d);
+        midDay.setHours(12, 0, 0, 0);
+
+        const avail = getAvailableCountForPeriod(midDay.toISOString(), new Date(midDay.getTime() + 1000).toISOString(), resList);
+
+        if (avail < Q) {
+            if (currentRangeStart === null) {
+                currentRangeStart = d;
+            }
+            currentRangeEnd = d;
+        } else {
+            if (currentRangeStart !== null && currentRangeEnd !== null) {
+                ranges.push({
+                    start: new Date(currentRangeStart),
+                    end: new Date(currentRangeEnd)
+                });
+                currentRangeStart = null;
+                currentRangeEnd = null;
+            }
+        }
+    }
+
+    if (currentRangeStart !== null && currentRangeEnd !== null) {
+        ranges.push({
+            start: new Date(currentRangeStart),
+            end: new Date(currentRangeEnd)
+        });
+    }
+
+    return ranges;
+};
+
+const getAvailableVehicleForPeriod = (pickupStr: string, returnStr: string, resList: any[], allVehicles: Vehicle[]) => {
+    const S = new Date(pickupStr).getTime();
+    const E = new Date(returnStr).getTime();
+
+    const reservedVehicleIds = new Set<string>();
+    for (const res of resList) {
+        const resPickup = new Date(res.pickup_date).getTime();
+        const resReturn = new Date(res.return_date).getTime();
+        const overlaps = S < resReturn && resPickup < E;
+        // Non-blocking reservations (pending deposit) do not reduce pool availability
+        const isBlocking = res.status === 'locação em uso' || (res.status === 'aguardando retirada' && res.observations?.includes('[CAUCAO_PAGO]'));
+        if (overlaps && isBlocking) {
+            reservedVehicleIds.add(res.vehicle_id);
+        }
+    }
+
+    return allVehicles.find(v => !reservedVehicleIds.has(v.id) && v.status !== 'Desativado');
+};
+
 const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         client_id: '',
-        vehicle_id: '',
+        vehicle_id: vehicles[0]?.id || '',
         pickup_date: '',
         return_date: '',
-        base_rate: 0,
+        base_rate: vehicles[0]?.daily_rate || 15,
         discount_percent: 0,
-        security_deposit: 0,
+        security_deposit: vehicles[0]?.default_security_deposit || 400,
         insurance_value: 0,
         additional_services: '',
         status: ReservationStatus.AGUARDANDO
@@ -46,62 +164,47 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
     const [occupiedRanges, setOccupiedRanges] = useState<{ start: Date; end: Date }[]>([]);
     const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [allReservations, setAllReservations] = useState<any[]>([]);
 
-    const availableVehicles = vehicles.filter(v => v.status === 'Disponível');
     const activeClients = clients.filter(c => c.status === 'Ativo');
 
-    const fetchAvailability = async (vehicleId: string, signal?: { aborted: boolean }) => {
+    const fetchAllReservations = async () => {
         setIsLoadingAvailability(true);
         try {
-            const data = await retryAsync(async () => {
-                const { data, error } = await supabase
-                    .from('reservations')
-                    .select('pickup_date, return_date')
-                    .eq('vehicle_id', vehicleId)
-                    .neq('status', 'reserva cancelada')
-                    .neq('status', 'reserva perdida');
-
-                if (error) throw error;
-                return data;
-            });
-
-            if (signal?.aborted) return;
-
-            if (data) {
-                setOccupiedRanges(data.map(r => ({
-                    start: new Date(r.pickup_date),
-                    end: new Date(r.return_date)
-                })));
-            }
+            const { data, error } = await supabase
+                .from('reservations')
+                .select('id, vehicle_id, pickup_date, return_date, status, observations')
+                .neq('status', 'reserva cancelada')
+                .neq('status', 'reserva perdida')
+                .neq('status', 'locação concluída');
+            if (error) throw error;
+            setAllReservations(data || []);
         } catch (err) {
-            console.error('Erro ao buscar disponibilidade:', err);
-            if (!signal?.aborted) {
-                toast.error('Não foi possível carregar o calendário de disponibilidade.');
-            }
+            console.error('Error fetching reservations:', err);
         } finally {
-            if (!signal?.aborted) {
-                setIsLoadingAvailability(false);
-            }
+            setIsLoadingAvailability(false);
         }
     };
 
     useEffect(() => {
-        let isAborted = { aborted: false };
-        if (formData.vehicle_id) {
-            const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
-            if (vehicle) {
-                setFormData(prev => ({
-                    ...prev,
-                    pickup_date: '',
-                    return_date: '',
-                    security_deposit: vehicle.default_security_deposit || 0,
-                    base_rate: vehicle.daily_rate || 0
-                }));
-            }
-            fetchAvailability(formData.vehicle_id, isAborted);
+        fetchAllReservations();
+    }, []);
+
+    useEffect(() => {
+        if (vehicles.length > 0 && !formData.vehicle_id) {
+            setFormData(prev => ({
+                ...prev,
+                vehicle_id: vehicles[0].id,
+                base_rate: vehicles[0].daily_rate || 15,
+                security_deposit: vehicles[0].default_security_deposit || 400
+            }));
         }
-        return () => { isAborted.aborted = true; };
-    }, [formData.vehicle_id]);
+    }, [vehicles]);
+
+    useEffect(() => {
+        const ranges = getOccupiedRangesForCalendar(1, allReservations);
+        setOccupiedRanges(ranges);
+    }, [allReservations]);
 
     const handleServiceToggle = (serviceId: string) => {
         setSelectedServices(prev => 
@@ -150,55 +253,44 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
 
         const { base_rate, discount_percent, ...cleanFormData } = formData;
 
-        const dataToSave = {
-            ...cleanFormData,
-            daily_rate: currentDailyRate,
-            days: currentDays,
-            total_value: currentSubtotal,
-            insurance_value: 0, // Sempre 0 pois está incluso
-            additional_services: selectedServices.join(', '),
-            insurance_details: INSURANCE_COVERAGES.map(name => ({ name, value: 0, selected: true }))
-        };
-
-        const validation = reservationSchema.safeParse(dataToSave);
-
-        if (!validation.success) {
-            const firstError = validation.error.issues[0];
-            toast.error(`${String(firstError.path[0])}: ${firstError.message}`);
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            // Verificar overlap de data para a poltrona selecionada
-            const { data: conflicts, error: checkError } = await supabase
+            // Verificar overlap de data na reserva unificada em tempo real
+            const { data: activeRes, error: checkError } = await supabase
                 .from('reservations')
-                .select('id, pickup_date, return_date, status')
-                .eq('vehicle_id', formData.vehicle_id)
+                .select('id, vehicle_id, pickup_date, return_date, status, observations')
                 .neq('status', 'reserva cancelada')
                 .neq('status', 'reserva perdida')
                 .neq('status', 'locação concluída');
 
             if (checkError) throw checkError;
 
-            if (conflicts) {
-                const newPickup = new Date(formData.pickup_date);
-                const newReturn = new Date(formData.return_date);
-                
-                const overlap = conflicts.find(res => {
-                    const resPickup = new Date(res.pickup_date);
-                    const resReturn = new Date(res.return_date);
-                    return newPickup < resReturn && resPickup < newReturn;
-                });
+            const resList = activeRes || [];
+            const availableVehicle = getAvailableVehicleForPeriod(formData.pickup_date, formData.return_date, resList, vehicles);
 
-                if (overlap) {
-                    const fmtDate = (dStr: string) => new Date(dStr).toLocaleString('pt-BR', {
-                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    });
-                    toast.error(`Esta poltrona já está reservada para o período de ${fmtDate(overlap.pickup_date)} a ${fmtDate(overlap.return_date)}.`);
-                    setIsSubmitting(false);
-                    return;
-                }
+            if (!availableVehicle) {
+                toast.error('Infelizmente, todas as poltronas estão ocupadas neste período.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const dataToSave = {
+                ...cleanFormData,
+                vehicle_id: availableVehicle.id, // Mapeia para a cadeira física livre
+                daily_rate: currentDailyRate,
+                days: currentDays,
+                total_value: currentSubtotal,
+                insurance_value: 0, // Sempre 0 pois está incluso
+                additional_services: selectedServices.join(', '),
+                insurance_details: INSURANCE_COVERAGES.map(name => ({ name, value: 0, selected: true }))
+            };
+
+            const validation = reservationSchema.safeParse(dataToSave);
+            if (!validation.success) {
+                const firstError = validation.error.issues[0];
+                toast.error(`${String(firstError.path[0])}: ${firstError.message}`);
+                setIsSubmitting(false);
+                return;
             }
 
             await onSave(dataToSave);
@@ -223,8 +315,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 w-full h-full sm:h-auto max-h-screen sm:max-h-[90vh] max-w-4xl rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 overflow-y-auto overflow-x-hidden flex flex-col">
                 <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-20 backdrop-blur-md">
                     <div>
                         <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Nova Reserva</h2>
@@ -238,17 +330,18 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                 <form onSubmit={handleSubmit} className="p-8 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona Disponível</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poltrona</label>
                             <select
                                 required
-                                className="w-full h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all dark:text-white"
+                                disabled
+                                className="w-full h-12 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all dark:text-white cursor-not-allowed"
                                 value={formData.vehicle_id}
-                                onChange={e => setFormData({ ...formData, vehicle_id: e.target.value })}
                             >
-                                <option value="">Selecione a poltrona primeiro</option>
-                                {availableVehicles.map(v => (
-                                    <option key={v.id} value={v.id}>{v.model} (Série: {v.plate})</option>
-                                ))}
+                                {vehicles.length > 0 && (
+                                    <option value={vehicles[0].id}>
+                                        {vehicles[0].model} (Pool de Estoque)
+                                    </option>
+                                )}
                             </select>
                         </div>
 
@@ -290,7 +383,14 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                             </button>
 
                             {showCalendar && (
-                                <div className="absolute top-full left-0 mt-2 z-[110]">
+                                <div 
+                                    className="fixed inset-0 sm:absolute sm:inset-auto sm:top-full sm:left-0 sm:mt-2 z-[110] flex items-center justify-center sm:block p-4 sm:p-0 bg-slate-900/60 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none"
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
+                                            setShowCalendar(false);
+                                        }
+                                    }}
+                                >
                                     <Calendar
                                         occupiedRanges={occupiedRanges}
                                         initialPickup={formData.pickup_date}
@@ -346,7 +446,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                         </div>
                     </div>
 
-                    {/* Bloco Informativo: Garantia ComfortCare */}
+                    {/* Bloco Informativo: Garantia PÓS LEVE */}
                     <div className="space-y-4 p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200 dark:border-emerald-800/30">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -354,7 +454,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                                     <span className="material-symbols-outlined">verified_user</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Garantia & Suporte ComfortCare</h3>
+                                    <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Garantia & Suporte PÓS LEVE</h3>
                                     <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase">Proteção Hospitalar & Técnica Inclusa</p>
                                 </div>
                             </div>
@@ -398,7 +498,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ clients, vehicles, 
                                     </span>
                                 )}
                                 <span className="text-[10px] text-emerald-600 font-bold">
-                                    Garantia & Suporte ComfortCare: Incluso (R$ 0,00)
+                                    Garantia & Suporte PÓS LEVE: Incluso (R$ 0,00)
                                 </span>
                             </div>
                         </div>

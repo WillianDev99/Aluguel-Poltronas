@@ -71,6 +71,18 @@ const MainContent: React.FC = () => {
       setClients(currentClients);
       setVehicles(currentVehicles);
 
+      // Auto-clean database of SEM_CHASSIS and SEM_RENAVAN
+      const dirtyVehicles = currentVehicles.filter(v => v.chassis?.includes('SEM_CHASSIS') || v.renavan === 'SEM_RENAVAN');
+      if (dirtyVehicles.length > 0) {
+        Promise.all(dirtyVehicles.map(async (v) => {
+          const cleanChassis = v.chassis?.includes('SEM_CHASSIS') ? 'Controle remoto, Reclinável 160°' : v.chassis;
+          const cleanRenavan = v.renavan === 'SEM_RENAVAN' ? '85 x 90 x 105 cm' : v.renavan;
+          await supabase.from('vehicles').update({ chassis: cleanChassis, renavan: cleanRenavan }).eq('id', v.id);
+        })).then(() => {
+          fetchData({ isManual: false });
+        });
+      }
+
       const transformed: Reservation[] = currentReservations.map((r: any) => {
         const client = currentClients.find(c => c.id === r.client_id);
         const vehicle = currentVehicles.find(v => v.id === r.vehicle_id);
@@ -126,13 +138,9 @@ const MainContent: React.FC = () => {
           <Route path="/dashboard" element={
             <Dashboard
               isLoading={isLoading}
-              stats={{
-                available: vehicles.filter(v => v.status === 'Disponível').length,
-                rented: vehicles.filter(v => v.status === 'Alugado').length,
-                total: vehicles.filter(v => v.status !== 'Desativado').length,
-                maintenance: vehicles.filter(v => v.status === 'Em manutenção').length
-              }}
-              recentReservations={reservations.slice(0, 4)}
+              vehicles={vehicles}
+              reservations={reservations}
+              recentReservations={reservations.slice(0, 5)}
             />
           } />
           <Route path="/clients" element={
@@ -159,6 +167,8 @@ const MainContent: React.FC = () => {
           <Route path="/vehicles" element={
             <VehiclesView
               vehicles={vehicles}
+              reservations={reservations}
+              clients={clients}
               isLoading={isLoading}
               onAddVehicle={async (v) => {
                 const { data, error } = await supabase.from('vehicles').insert([sanitizeEmptyStrings(v)]).select();
@@ -198,6 +208,13 @@ const MainContent: React.FC = () => {
                     dateStr: new Date(data[0].created_at).toLocaleDateString('pt-BR')
                   };
                   setReservations(prev => prev.map(item => item.id === id ? transformed : item));
+                }
+              }}
+              onUpdateVehicle={async (id, updates) => {
+                const { data, error } = await supabase.from('vehicles').update(sanitizeEmptyStrings(updates)).eq('id', id).select('*');
+                if (error) throw error;
+                if (data && data[0]) {
+                  setVehicles(prev => prev.map(item => item.id === id ? data[0] : item));
                 }
               }}
               onAddReservation={async (r) => {

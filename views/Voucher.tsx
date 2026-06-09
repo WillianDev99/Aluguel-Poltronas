@@ -1,5 +1,6 @@
 import React from 'react';
 import { Reservation } from '../types';
+import posleveLogoText from '../src/assets/posleve_logo_text.png';
 
 interface VoucherProps {
   reservation: Reservation | null;
@@ -12,9 +13,8 @@ const Voucher: React.FC<VoucherProps> = ({ reservation, onBack }) => {
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 min-h-screen">
       <header className="no-print flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3">
-        <div className="flex items-center gap-3 text-primary">
-          <span className="material-symbols-outlined text-3xl text-primary">chair</span>
-          <h2 className="text-lg font-bold leading-tight tracking-tight dark:text-white">ComfortCare</h2>
+        <div className="flex items-center gap-3">
+          <img src={posleveLogoText} className="h-12 w-auto object-contain" alt="PÓS LEVE" />
         </div>
         <div className="flex flex-1 justify-end gap-8 items-center">
           <button
@@ -28,25 +28,20 @@ const Voucher: React.FC<VoucherProps> = ({ reservation, onBack }) => {
       </header>
 
       <div className="flex flex-col items-center justify-center text-center w-full max-w-2xl mx-auto py-10 min-h-[calc(100vh-64px)] p-4 md:p-10">
-        <div className="flex items-center gap-3 mb-6 text-primary">
-          <span className="material-symbols-outlined text-5xl">chair</span>
-          <span className="text-2xl font-black tracking-tight dark:text-white">ComfortCare</span>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <img src={posleveLogoText} className="h-14 w-auto object-contain" alt="PÓS LEVE" />
         </div>
 
         <div className="print-area w-full bg-white text-slate-900 rounded-xl shadow-2xl flex flex-col overflow-hidden text-left">
           <div className="p-8 md:p-12 border-b-4 border-primary bg-slate-50">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-4xl text-primary">chair</span>
-                <div>
-                  <h1 className="text-xl font-black tracking-tighter text-primary uppercase">ComfortCare</h1>
-                  <p className="text-xs text-slate-500 font-medium">SISTEMA ADMINISTRATIVO DE ACERVO</p>
-                </div>
+                <img src={posleveLogoText} className="h-16 w-auto object-contain" alt="PÓS LEVE" />
               </div>
               <div className="text-left md:text-right">
                 <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Documento Oficial</p>
                 <h2 className="text-lg font-bold leading-tight text-primary">VOUCHER DE LOCAÇÃO DE POLTRONA</h2>
-                <p className="text-sm font-mono text-slate-500">REF: #VR-CC-{reservation.id.toString().substring(0, 8).toUpperCase()}</p>
+                <p className="text-sm font-mono text-slate-500">REF: #VR-PL-{reservation.id.toString().substring(0, 8).toUpperCase()}</p>
               </div>
             </div>
           </div>
@@ -132,7 +127,7 @@ const Voucher: React.FC<VoucherProps> = ({ reservation, onBack }) => {
             <section className="pt-12 grid grid-cols-1 md:grid-cols-2 gap-12 text-center">
               <div className="text-center">
                 <div className="border-t border-slate-400 mt-8 mb-2"></div>
-                <p className="text-[10px] font-bold uppercase text-slate-500">ComfortCare Ltda.</p>
+                <p className="text-[10px] font-bold uppercase text-slate-500">PÓS LEVE Ltda.</p>
                 <p className="text-[9px] text-slate-400">Representante Autorizado</p>
               </div>
               <div className="text-center">
@@ -143,8 +138,9 @@ const Voucher: React.FC<VoucherProps> = ({ reservation, onBack }) => {
             </section>
           </div>
 
-          <div className="px-12 py-6 bg-slate-50 text-[10px] text-slate-400 border-t border-slate-100 italic text-center leading-relaxed">
-            Este voucher é um documento administrativo e deve ser apresentado juntamente com o documento de identificação original com foto do locatário no momento do recebimento. A ComfortCare reserva-se o direito de reagendar a entrega caso os requisitos cadastrais ou de segurança não sejam preenchidos.
+          <div className="px-12 py-6 bg-slate-50 text-[10px] text-slate-500 border-t border-slate-100 text-center leading-relaxed space-y-2">
+            <p className="font-bold text-amber-700 uppercase">Atenção: A reserva deste equipamento só será efetivamente confirmada e garantida mediante o pagamento do caução de segurança. Até a comprovação do pagamento, as datas selecionadas continuarão disponíveis para locação.</p>
+            <p className="italic text-slate-400">Este voucher é um documento administrativo e deve ser apresentado juntamente com o documento de identificação original com foto do locatário no momento do recebimento. A PÓS LEVE reserva-se o direito de reagendar a entrega caso os requisitos cadastrais ou de segurança não sejam preenchidos.</p>
           </div>
 
           <div className="no-print p-6 bg-slate-100 border-t border-slate-200 flex justify-between items-center text-left">
