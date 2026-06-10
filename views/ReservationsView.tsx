@@ -49,6 +49,28 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
+  const [contracts, setContracts] = useState<Record<string, { status: string }>>({});
+
+  const fetchContracts = React.useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rental_contracts')
+        .select('rental_id, status');
+      if (error) throw error;
+      
+      const contractMap: Record<string, { status: string }> = {};
+      data?.forEach((c: any) => {
+        contractMap[c.rental_id] = { status: c.status || 'pendente' };
+      });
+      setContracts(contractMap);
+    } catch (err) {
+      console.error('Erro ao buscar status dos contratos:', err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchContracts();
+  }, [reservations, fetchContracts]);
 
   const getFriendlyStatus = (status: string) => {
     switch (status) {
@@ -287,6 +309,40 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                                     {res.origin === 'site' ? 'Site / Online' : 'Painel / Balcão'}
                                   </span>
                                 </div>
+                                <div>
+                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Assinatura de Contrato</span>
+                                  {(() => {
+                                    const cStatus = contracts[res.id]?.status;
+                                    if (!cStatus) {
+                                      return <span className="text-xs text-slate-405 italic">Contrato não gerado</span>;
+                                    }
+                                    return (
+                                      <div className="flex flex-col gap-2 items-start">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                          cStatus === 'assinado' 
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200' 
+                                            : 'bg-amber-50 text-amber-700 dark:bg-amber-955/10 dark:text-amber-400 border-amber-200'
+                                        }`}>
+                                          {cStatus === 'assinado' ? 'Assinado' : 'Pendente'}
+                                        </span>
+                                        {cStatus === 'pendente' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const signLink = `${window.location.origin}/contrato/${res.id}/assinar`;
+                                              navigator.clipboard.writeText(signLink);
+                                              toast.success('Link de assinatura copiado!');
+                                            }}
+                                            className="flex items-center gap-1 text-[10px] text-primary hover:underline dark:text-brand-teal font-extrabold uppercase tracking-wider mt-1"
+                                          >
+                                            <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                                            Copiar Link
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
                               </div>
 
                               {/* Col 2: Valores */}
@@ -512,6 +568,42 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                           </div>
                         </div>
 
+                        {/* Contrato Assinatura Block */}
+                        <div className="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 flex flex-col gap-2">
+                          <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Assinatura de Contrato</span>
+                          {(() => {
+                            const cStatus = contracts[res.id]?.status;
+                            if (!cStatus) {
+                              return <span className="text-[10px] text-slate-450 italic">Contrato não gerado</span>;
+                            }
+                            return (
+                              <div className="flex justify-between items-center w-full">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  cStatus === 'assinado' 
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200' 
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-955/10 dark:text-amber-400 border-amber-200'
+                                }`}>
+                                  {cStatus === 'assinado' ? 'Assinado' : 'Pendente'}
+                                </span>
+                                {cStatus === 'pendente' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const signLink = `${window.location.origin}/contrato/${res.id}/assinar`;
+                                      navigator.clipboard.writeText(signLink);
+                                      toast.success('Link de assinatura copiado!');
+                                    }}
+                                    className="flex items-center gap-1 text-[10px] text-primary hover:underline dark:text-brand-teal font-extrabold uppercase tracking-wider"
+                                  >
+                                    <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                                    Copiar Link
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
                         {/* Financial detail */}
                         <div className="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 space-y-1.5">
                           <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Detalhamento Financeiro</span>
@@ -595,7 +687,7 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
               reservation={editingContractRes} 
               client={clients.find(c => c.id === editingContractRes.client_id)}
               vehicle={vehicles.find(v => v.id === editingContractRes.vehicle_id)}
-              onClose={() => setEditingContractRes(null)} 
+              onClose={() => { setEditingContractRes(null); fetchContracts(); }} 
           />
         )}
       </Suspense>

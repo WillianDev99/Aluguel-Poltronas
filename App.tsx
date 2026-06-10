@@ -17,6 +17,7 @@ const ClientsView = React.lazy(() => import('./views/ClientsView'));
 const VehiclesView = React.lazy(() => import('./views/VehiclesView'));
 const ReservationsView = React.lazy(() => import('./views/ReservationsView'));
 const UsersView = React.lazy(() => import('./views/UsersView'));
+const PublicContractSignatureView = React.lazy(() => import('./views/PublicContractSignatureView'));
 // Components
 import Layout from './components/Layout';
 import VoucherModal from './components/VoucherModal';
@@ -323,6 +324,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<PublicLanding />} />
           <Route path="/login" element={<Login onLogin={() => navigate('/dashboard', { replace: true })} />} />
+          <Route path="/contrato/:contractId/assinar" element={<PublicContractSignatureView />} />
           <Route path="/*" element={<AuthGuard><MainContent /></AuthGuard>} />
         </Routes>
       </React.Suspense>

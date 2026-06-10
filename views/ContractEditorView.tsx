@@ -13,6 +13,10 @@ interface ContractEditorViewProps {
 const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, client, vehicle, onClose }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [contractStatus, setContractStatus] = useState<'pendente' | 'assinado'>('pendente');
+    const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+    const [signedAt, setSignedAt] = useState<string | null>(null);
+    const [signedInfo, setSignedInfo] = useState<{ name?: string, cpf?: string, ip?: string } | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -21,13 +25,39 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             try {
                 const { data: savedContract } = await supabase
                     .from('rental_contracts')
-                    .select('content')
+                    .select('content, status, signature_url, signed_at, client_name, client_cpf, client_ip')
                     .eq('rental_id', reservation.id)
                     .maybeSingle();
 
                 let initialContent = '';
-                if (savedContract?.content) {
-                    initialContent = savedContract.content;
+                if (savedContract) {
+                    setContractStatus(savedContract.status || 'pendente');
+                    setSignatureUrl(savedContract.signature_url || null);
+                    setSignedAt(savedContract.signed_at || null);
+                    if (savedContract.status === 'assinado') {
+                        setSignedInfo({
+                            name: savedContract.client_name,
+                            cpf: savedContract.client_cpf,
+                            ip: savedContract.client_ip
+                        });
+                    }
+
+                    let dbContent = savedContract.content;
+                    if (savedContract.signature_url) {
+                        // Replace signature placeholders or replace empty signature div with actual image above line
+                        if (dbContent.includes('{{CLIENT_SIGNATURE_PLACEHOLDER}}')) {
+                            dbContent = dbContent.replace(
+                                '{{CLIENT_SIGNATURE_PLACEHOLDER}}',
+                                `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
+                            );
+                        } else if (dbContent.includes('<div style="height: 50px;"></div>')) {
+                            dbContent = dbContent.replace(
+                                '<div style="height: 50px;"></div>',
+                                `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
+                            );
+                        }
+                    }
+                    initialContent = dbContent;
                 } else {
                     const { data: template } = await supabase
                         .from('contract_templates')
@@ -73,6 +103,9 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             '{{SECURITY_DEPOSIT}}': money(reservation.security_deposit),
             '{{INSURANCE_VALUE}}': money(vehicle?.default_insurance_value || 0),
             '{{CURRENT_DATE}}': new Date().toLocaleDateString('pt-BR'),
+            '{{CLIENT_SIGNATURE_PLACEHOLDER}}': signatureUrl 
+                ? `<div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
+                : `<div style="height: 50px;"></div>`
         };
 
         let result = text;
@@ -108,6 +141,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 <div style="font-size: 10px;">Locadora</div>
             </div>
             <div style="text-align: center; width: 45%;">
+                {{CLIENT_SIGNATURE_PLACEHOLDER}}
                 <div style="border-top: 1px solid black; margin-bottom: 5px;"></div>
                 <div style="font-weight: bold; font-size: 11px;">{{CLIENT_NAME}}</div>
                 <div style="font-size: 10px;">Locatário</div>
@@ -126,7 +160,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             const content = editorRef.current.innerHTML;
             const { error } = await supabase
                 .from('rental_contracts')
-                .upsert({ rental_id: reservation.id, content });
+                .upsert({ rental_id: reservation.id, content, status: 'pendente' });
             if (error) throw error;
             toast.success('Contrato salvo com sucesso!');
         } catch (err: any) {
@@ -138,7 +172,22 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
     const handlePrint = () => {
         if (!editorRef.current) return;
-        const content = editorRef.current.innerHTML;
+        let content = editorRef.current.innerHTML;
+        
+        // Append a formal audit block if signed
+        if (contractStatus === 'assinado' && signedInfo) {
+            content += `
+                <div style="margin-top: 40px; padding: 15px; border: 1px solid #10b981; background-color: #f0fdf4; border-radius: 8px; font-family: sans-serif; font-size: 10px; line-height: 1.4;">
+                    <div style="color: #065f46; font-weight: bold; font-size: 11px; margin-bottom: 5px;">Histórico de Assinatura Eletrônica (Auditoria)</div>
+                    <div style="color: #047857;">Assinante: <strong>${signedInfo.name}</strong></div>
+                    <div style="color: #047857;">CPF Confirmado: <strong>${signedInfo.cpf}</strong></div>
+                    <div style="color: #047857;">Endereço IP: <strong>${signedInfo.ip}</strong></div>
+                    <div style="color: #047857;">Data/Hora: <strong>${signedAt ? new Date(signedAt).toLocaleString('pt-BR') : ''}</strong></div>
+                    <div style="color: #047857; font-size: 8px; margin-top: 5px;">Medida Provisória nº 2.200-2/2001 (Validade Jurídica de Assinaturas Digitais)</div>
+                </div>
+            `;
+        }
+
         const win = window.open('', '_blank');
         if (win) {
             win.document.write(`
@@ -161,6 +210,8 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
         }
     };
 
+    const isSigned = contractStatus === 'assinado';
+
     return (
         <div className="fixed inset-0 z-[110] bg-slate-100 flex flex-col animate-in fade-in duration-300">
             <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-sm">
@@ -170,7 +221,10 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     </button>
                     <div>
                         <h2 className="text-lg font-black uppercase tracking-tight">Editor de Contrato</h2>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">{client?.name} • #{reservation.id.substring(0, 8)}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">
+                            {client?.name} • #{reservation.id.substring(0, 8)}
+                            {isSigned && <span className="ml-2 text-emerald-600 dark:text-emerald-500 font-extrabold uppercase">● Assinado</span>}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -178,9 +232,17 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                         <span className="material-symbols-outlined text-lg">print</span>
                         Imprimir
                     </button>
-                    <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-lg disabled:opacity-50">
+                    <button 
+                        onClick={handleSave} 
+                        disabled={isSaving || isSigned} 
+                        className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-lg disabled:opacity-50 ${
+                            isSigned 
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                            : 'bg-primary text-white hover:brightness-110'
+                        }`}
+                    >
                         {isSaving ? <span className="animate-spin material-symbols-outlined text-lg">progress_activity</span> : <span className="material-symbols-outlined text-lg">save</span>}
-                        Salvar Contrato
+                        {isSigned ? 'Contrato Assinado (Bloqueado)' : 'Salvar Contrato'}
                     </button>
                 </div>
             </header>
@@ -198,8 +260,8 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             <div className="flex-1 overflow-y-auto flex justify-center p-4 md:p-8 bg-slate-100">
                 <div 
                     ref={editorRef}
-                    contentEditable
-                    className="w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl p-[5mm] sm:p-[20mm] outline-none prose prose-slate max-w-none"
+                    contentEditable={!isSigned}
+                    className={`w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl p-[5mm] sm:p-[20mm] outline-none prose prose-slate max-w-none ${isSigned ? 'cursor-not-allowed opacity-90 select-none' : ''}`}
                     style={{ fontFamily: 'serif', fontSize: '12px' }}
                 />
             </div>
