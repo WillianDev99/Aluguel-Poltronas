@@ -17,6 +17,7 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Omit<Client, 'id'>>({
     name: '',
     cpf: '',
@@ -238,11 +239,12 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
 
       <section className="space-y-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto p-4 sm:p-6">
+          <div className="overflow-auto max-h-[calc(100vh-280px)] p-0 sm:p-6">
             {isLoading ? (
               <TableSkeleton />
             ) : (
-              <table className="w-full text-left border-collapse">
+            <>
+              <table className="w-full text-left border-collapse hidden md:table">
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nome Completo</th>
@@ -353,6 +355,161 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                   )}
                 </tbody>
               </table>
+
+              {/* Mobile View (Cards) */}
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                {clients.map((c) => {
+                  const isExpanded = expandedClientId === c.id;
+                  return (
+                    <div 
+                      key={c.id} 
+                      className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                    >
+                      {/* Header row: Name, Avatar & Status */}
+                      <div 
+                        className="flex justify-between items-start gap-2 cursor-pointer"
+                        onClick={() => setExpandedClientId(isExpanded ? null : c.id)}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                            {c.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-450 truncate">{c.phone || 'Sem telefone'}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${c.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400 border-slate-200'}`}>
+                          {c.status}
+                        </span>
+                      </div>
+
+                      {/* Quick info row */}
+                      <div 
+                        className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/30 cursor-pointer"
+                        onClick={() => setExpandedClientId(isExpanded ? null : c.id)}
+                      >
+                        <div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">CPF</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-350 font-mono">{c.cpf}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Cidade/UF</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-350 truncate block">{c.city} / {c.state}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions & expand toggle */}
+                      <div className="flex justify-between items-center pt-1">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingClient(c);
+                              setFormData({
+                                name: c.name,
+                                cpf: c.cpf,
+                                rg: c.rg,
+                                birth_date: c.birth_date,
+                                cnh_number: c.cnh_number,
+                                cnh_category: c.cnh_category,
+                                cnh_expiration: c.cnh_expiration,
+                                email: c.email,
+                                phone: c.phone,
+                                cep: c.cep,
+                                street: c.street,
+                                number: c.number,
+                                neighborhood: c.neighborhood,
+                                city: c.city,
+                                state: c.state,
+                                status: c.status,
+                                vip: c.vip,
+                                score: c.score,
+                                cnh_url: c.cnh_url || '',
+                                address_proof_url: c.address_proof_url || '',
+                                selfie_url: c.selfie_url || ''
+                              });
+                              setIsModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-[11px] font-bold border border-primary/20 flex items-center gap-1 hover:bg-primary hover:text-white transition-all active:scale-95"
+                          >
+                            <span className="material-symbols-outlined text-sm">edit</span>
+                            <span>Editar</span>
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`Tem certeza que deseja excluir o cliente "${c.name}"?`)) {
+                                await onDeleteClient(c.id);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white text-[11px] font-bold border border-rose-500/20 flex items-center gap-1 transition-all active:scale-95"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                            <span>Excluir</span>
+                          </button>
+                        </div>
+                        
+                        <button 
+                          onClick={() => setExpandedClientId(isExpanded ? null : c.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors border border-slate-200 dark:border-slate-700 flex items-center"
+                        >
+                          <span className="material-symbols-outlined text-lg">
+                            {isExpanded ? 'expand_less' : 'expand_more'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Collapsible Expanded details */}
+                      {isExpanded && (
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3.5 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">RG</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">{c.rg || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Data de Nascimento</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">{c.birth_date ? new Date(c.birth_date).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">E-mail</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300 break-all">{c.email}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Endereço Completo</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase leading-relaxed block bg-slate-50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-100 dark:border-slate-800/40">
+                                {c.street}, {c.number} - {c.neighborhood} • CEP: {c.cep}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Attached files status check */}
+                          <div className="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 space-y-2">
+                            <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Documentação Anexa</span>
+                            <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                              <div className={`p-1.5 rounded-lg border flex flex-col items-center gap-1 ${c.cnh_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-slate-100 border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800'}`}>
+                                <span className="material-symbols-outlined text-base">badge</span>
+                                <span className="font-bold">RG/CPF</span>
+                              </div>
+                              <div className={`p-1.5 rounded-lg border flex flex-col items-center gap-1 ${c.address_proof_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-slate-100 border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800'}`}>
+                                <span className="material-symbols-outlined text-base">home_pin</span>
+                                <span className="font-bold">Endereço</span>
+                              </div>
+                              <div className={`p-1.5 rounded-lg border flex flex-col items-center gap-1 ${c.selfie_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-slate-100 border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800'}`}>
+                                <span className="material-symbols-outlined text-base">add_a_photo</span>
+                                <span className="font-bold">Selfie</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {clients.length === 0 && (
+                  <div className="py-12 text-center text-slate-500 text-sm">Nenhum cliente encontrado no banco de dados.</div>
+                )}
+              </div>
+            </>
             )}
           </div>
         </div>
