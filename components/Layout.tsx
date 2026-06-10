@@ -22,6 +22,29 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
   const [isNotifOpen, setIsNotifOpen] = React.useState(false);
   const notifRef = React.useRef<HTMLDivElement>(null);
 
+  const [acknowledgedIds, setAcknowledgedIds] = React.useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('posleve_acknowledged_notifs');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
+      return [];
+    }
+  });
+
+  const handleAcknowledge = React.useCallback((id: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    setAcknowledgedIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      try {
+        localStorage.setItem('posleve_acknowledged_notifs', JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
+  }, []);
+
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -138,8 +161,15 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
     };
     list.sort((a, b) => priority[a.type] - priority[b.type]);
 
-    return list;
-  }, [reservations]);
+    return list.map(item => ({
+      ...item,
+      isRead: item.type === 'pending_deposit' ? false : acknowledgedIds.includes(item.id)
+    }));
+  }, [reservations, acknowledgedIds]);
+
+  const pendingCount = React.useMemo(() => {
+    return notificationItems.filter(item => !item.isRead).length;
+  }, [notificationItems]);
 
   const menuItems = [
     { id: 'DASHBOARD', path: '/dashboard', label: 'Painel', icon: 'dashboard', roles: ['admin', 'user'] },
@@ -257,16 +287,16 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
               <button 
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
                 className={`hidden sm:flex size-10 items-center justify-center rounded-xl transition-all relative ${
-                  notificationItems.length > 0 
+                  pendingCount > 0 
                     ? 'bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/20' 
                     : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white'
                 }`}
                 title="Notificações"
               >
                 <span className="material-symbols-outlined text-lg">notifications</span>
-                {notificationItems.length > 0 && (
+                {pendingCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-950 animate-bounce">
-                    {notificationItems.length}
+                    {pendingCount}
                   </span>
                 )}
               </button>
@@ -279,9 +309,9 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                       <span className="material-symbols-outlined text-amber-500 text-lg">notifications_active</span>
                       <h3 className="font-display font-bold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Alertas Operacionais</h3>
                     </div>
-                    {notificationItems.length > 0 && (
+                    {pendingCount > 0 && (
                       <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase">
-                        {notificationItems.length} ativo{notificationItems.length > 1 ? 's' : ''}
+                        {pendingCount} ativo{pendingCount > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
@@ -294,31 +324,74 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Nenhum alerta pendente no momento.</p>
                       </div>
                     ) : (
-                      notificationItems.map(item => (
-                        <div 
-                          key={item.id}
-                          onClick={() => {
-                            navigate('/reservations');
-                            setIsNotifOpen(false);
-                          }}
-                          className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer flex gap-3 transition-colors group"
-                        >
-                          <div className={`size-9 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
-                            <span className="material-symbols-outlined text-base">{item.icon}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start gap-2">
-                              <h4 className="text-xs font-bold text-slate-800 dark:text-white truncate">{item.title}</h4>
-                              {item.timeLabel && (
-                                <span className="text-[9px] text-slate-400 dark:text-slate-500 shrink-0 font-medium">{item.timeLabel}</span>
-                              )}
+                      notificationItems.map(item => {
+                        const borderClass = !item.isRead 
+                          ? (item.type === 'collect_overdue' ? 'border-l-4 border-rose-500' :
+                             item.type === 'collect_tomorrow' ? 'border-l-4 border-amber-500' :
+                             item.type === 'new_site_req' ? 'border-l-4 border-emerald-500' :
+                             'border-l-4 border-sky-500')
+                          : 'border-l-4 border-transparent';
+
+                        const bgClass = !item.isRead
+                          ? (item.type === 'collect_overdue' ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10 dark:hover:bg-rose-500/15' :
+                             item.type === 'collect_tomorrow' ? 'bg-amber-500/5 dark:bg-amber-500/10 hover:bg-amber-500/10 dark:hover:bg-amber-500/15' :
+                             item.type === 'new_site_req' ? 'bg-emerald-500/5 dark:bg-emerald-500/10 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15' :
+                             'bg-sky-500/5 dark:bg-sky-500/10 hover:bg-sky-500/10 dark:hover:bg-sky-500/15')
+                          : 'opacity-65 hover:bg-slate-50 dark:hover:bg-slate-800/30';
+
+                        return (
+                          <div 
+                            key={item.id}
+                            onClick={() => {
+                              if (item.type !== 'pending_deposit') {
+                                handleAcknowledge(item.id);
+                              }
+                              navigate('/reservations');
+                              setIsNotifOpen(false);
+                            }}
+                            className={`p-3.5 cursor-pointer flex gap-3 transition-all duration-200 group relative ${borderClass} ${bgClass}`}
+                          >
+                            <div className={`size-9 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+                              <span className="material-symbols-outlined text-base">{item.icon}</span>
                             </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed group-hover:text-primary dark:group-hover:text-brand-teal transition-colors font-medium">
-                              {item.description}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start gap-2">
+                                <h4 className="text-xs font-bold text-slate-800 dark:text-white truncate">{item.title}</h4>
+                                {item.timeLabel && (
+                                  <span className="text-[9px] text-slate-400 dark:text-slate-500 shrink-0 font-medium">{item.timeLabel}</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed group-hover:text-primary dark:group-hover:text-brand-teal transition-colors font-medium">
+                                {item.description}
+                              </p>
+                              <div className="flex justify-between items-center mt-2">
+                                {item.type !== 'pending_deposit' ? (
+                                  !item.isRead ? (
+                                    <button
+                                      onClick={(e) => handleAcknowledge(item.id, e)}
+                                      className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-md transition-colors"
+                                      title="Marcar como ciente"
+                                    >
+                                      <span className="material-symbols-outlined text-[12px] font-black">done</span>
+                                      Estou ciente
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+                                      <span className="material-symbols-outlined text-[12px]">done_all</span>
+                                      Ciente
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-0.5 bg-sky-500/10 px-2 py-0.5 rounded-md">
+                                    <span className="material-symbols-outlined text-[12px]">hourglass_empty</span>
+                                    Aguardando pagamento
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                   
