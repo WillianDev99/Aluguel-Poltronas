@@ -7,8 +7,10 @@ import { UserProfile } from '../types';
 const UsersView: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
     const [isCreating, setIsCreating] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -59,12 +61,12 @@ const UsersView: React.FC = () => {
                 }
             );
 
-            const { error } = await tempSupabase.auth.signUp({
+            const { data, error } = await tempSupabase.auth.signUp({
                 email: newEmail,
                 password: newPassword,
                 options: {
                     data: {
-                        full_name: 'Funcionário'
+                        full_name: newName
                     }
                 }
             });
@@ -79,9 +81,23 @@ const UsersView: React.FC = () => {
                 throw new Error(errorMsg);
             }
 
+            // Immediately update profile to set correct full_name and role
+            if (data?.user?.id) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        full_name: newName,
+                        role: newRole
+                    })
+                    .eq('id', data.user.id);
+                if (profileError) throw profileError;
+            }
+
             setMessage({ type: 'success', text: 'Usuário criado com sucesso!' });
+            setNewName('');
             setNewEmail('');
             setNewPassword('');
+            setNewRole('user');
             
             // Allow trigger a moment to insert the profile row, then refresh the list
             setTimeout(() => {
@@ -178,6 +194,18 @@ const UsersView: React.FC = () => {
                                 </div>
                             )}
                             <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nome Completo</label>
+                                <input
+                                    type="text"
+                                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white"
+                                    placeholder="Ex: João Silva"
+                                    required
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    disabled={isCreating}
+                                />
+                            </div>
+                            <div className="space-y-1">
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Email</label>
                                 <input
                                     type="email"
@@ -201,6 +229,18 @@ const UsersView: React.FC = () => {
                                     onChange={e => setNewPassword(e.target.value)}
                                     disabled={isCreating}
                                 />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Perfil de Acesso</label>
+                                <select
+                                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 focus:ring-primary focus:border-primary text-sm p-3 dark:text-white"
+                                    value={newRole}
+                                    onChange={e => setNewRole(e.target.value as 'admin' | 'user')}
+                                    disabled={isCreating}
+                                >
+                                    <option value="user">Funcionário Padrão</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
                             </div>
                             <button
                                 type="submit"
