@@ -45,7 +45,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     let dbContent = savedContract.content;
                     const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
                     const oldDivRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
-                    const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>[\s\S]*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
+                    const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
 
                     if (savedContract.signature_url) {
                         const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
