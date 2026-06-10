@@ -13,7 +13,7 @@ import posleveHero from '../src/assets/comfortcare_hero.png';
 import posleveHeroBeige from '../src/assets/comfortcare_beige.png';
 import posleveQuality from '../src/assets/comfortcare_quality.png';
 import posleveLogoText from '../src/assets/posleve_logo_text.png';
-import posleveLogoEmblem from '../src/assets/posleve_logo_emblem.jpg';
+import posleveLogoEmblem from '../src/assets/posleve_logo_emblem.png';
 
 const ADDITIONAL_SERVICES = [
   { id: 'higienizacao', name: 'Higienização Avançada Extra', price: 50.00, type: 'fixed' },
