@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   role TEXT DEFAULT 'user',
   full_name TEXT,
   avatar_url TEXT,
+  signature_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 

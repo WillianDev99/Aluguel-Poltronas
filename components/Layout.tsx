@@ -176,6 +176,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
     { id: 'CLIENTS', path: '/clients', label: 'Clientes', icon: 'group', roles: ['admin', 'user'] },
     { id: 'VEHICLES', path: '/vehicles', label: 'Poltronas', icon: 'chair', roles: ['admin', 'user'] },
     { id: 'RESERVATIONS', path: '/reservations', label: 'Reservas', icon: 'calendar_today', roles: ['admin', 'user'] },
+    { id: 'SIGNATURE', path: '/signature', label: 'Assinatura Locador', icon: 'history_edu', roles: ['admin'] },
     { id: 'USERS', path: '/users', label: 'Usuários', icon: 'manage_accounts', roles: ['admin'] },
   ];
 

@@ -18,6 +18,7 @@ const VehiclesView = React.lazy(() => import('./views/VehiclesView'));
 const ReservationsView = React.lazy(() => import('./views/ReservationsView'));
 const UsersView = React.lazy(() => import('./views/UsersView'));
 const PublicContractSignatureView = React.lazy(() => import('./views/PublicContractSignatureView'));
+const LandlordSignatureView = React.lazy(() => import('./views/LandlordSignatureView'));
 // Components
 import Layout from './components/Layout';
 import VoucherModal from './components/VoucherModal';
@@ -242,7 +243,8 @@ const MainContent: React.FC = () => {
               }}
             />
           } />
-          <Route path="/users" element={profile?.role === 'admin' ? <UsersView /> : <Navigate to="/dashboard" replace />} />
+           <Route path="/users" element={profile?.role === 'admin' ? <UsersView /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/signature" element={profile?.role === 'admin' ? <LandlordSignatureView /> : <Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </ErrorBoundary>

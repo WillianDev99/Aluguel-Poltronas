@@ -109,6 +109,7 @@ export interface UserProfile {
   created_at: string;
   full_name?: string;
   avatar_url?: string;
+  signature_url?: string;
 }
 
 export interface APIKey {
@@ -120,4 +121,4 @@ export interface APIKey {
   last_used_at?: string;
 }
 
-export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS' | 'INTEGRATIONS';
+export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS' | 'INTEGRATIONS' | 'SIGNATURE';

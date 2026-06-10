@@ -13,6 +13,7 @@ const PublicContractSignatureView: React.FC = () => {
     const [contract, setContract] = useState<any>(null);
     const [reservation, setReservation] = useState<Reservation | null>(null);
     const [client, setClient] = useState<Client | null>(null);
+    const [landlordSigUrl, setLandlordSigUrl] = useState<string | null>(null);
 
     // Form states
     const [fullName, setFullName] = useState('');
@@ -105,6 +106,17 @@ const PublicContractSignatureView: React.FC = () => {
                 setClient(clientData);
                 setFullName(clientData.name || '');
                 setCpf('');
+
+                // 4. Fetch Landlord Signature
+                const { data: landlordData } = await supabase
+                    .from('profiles')
+                    .select('signature_url')
+                    .not('signature_url', 'is', null)
+                    .limit(1)
+                    .maybeSingle();
+                if (landlordData?.signature_url) {
+                    setLandlordSigUrl(landlordData.signature_url);
+                }
 
             } catch (err) {
                 console.error('Erro ao carregar dados do contrato:', err);
@@ -280,6 +292,10 @@ const PublicContractSignatureView: React.FC = () => {
         const divRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
         const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
 
+        const landlordContainerRegex = /<div\s+id="landlord-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+        const locadoraRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locadora\s*<\/div>)/i;
+
+        // Process client signature
         if (contract.status === 'assinado' && contract.signature_url) {
             const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${contract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
             
@@ -298,6 +314,21 @@ const PublicContractSignatureView: React.FC = () => {
                 html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
             }
         }
+
+        // Process landlord signature
+        if (landlordSigUrl) {
+            const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            if (landlordContainerRegex.test(html)) {
+                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
+            } else if (locadoraRegex.test(html)) {
+                html = html.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>$2`);
+            }
+        } else {
+            if (landlordContainerRegex.test(html)) {
+                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+            }
+        }
+
         return html;
     };
 
@@ -394,8 +425,18 @@ const PublicContractSignatureView: React.FC = () => {
                     {isSigned && contract.signature_url && (
                         <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-8 text-center text-xs">
                             <div>
-                                <div className="h-16 flex items-center justify-center font-bold text-slate-500 italic">
-                                    [Assinado Eletronicamente]
+                                <div className="h-16 flex items-center justify-center">
+                                    {landlordSigUrl ? (
+                                        <img 
+                                            src={landlordSigUrl} 
+                                            alt="Assinatura da Locadora" 
+                                            className="h-16 w-auto object-contain max-w-[200px]"
+                                        />
+                                    ) : (
+                                        <div className="font-bold text-slate-500 italic">
+                                            [Assinado Eletronicamente]
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="border-t border-slate-300 dark:border-slate-700 pt-1 font-bold">PÓS LEVE</div>
                                 <div className="text-[10px] text-slate-450 uppercase">Locadora</div>
