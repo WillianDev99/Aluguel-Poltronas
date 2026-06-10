@@ -160,9 +160,8 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                           <span className="text-sm font-semibold text-slate-900 dark:text-white">{res.clientName}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{res.vehicleModel}</div>
-                        <div className="text-xs text-slate-400 font-mono tracking-tight">{res.vehiclePlate}</div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">
+                        {res.vehiclePlate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.pickup_date)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.return_date)}</td>
