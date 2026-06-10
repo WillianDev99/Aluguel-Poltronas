@@ -124,6 +124,7 @@ const MainContent: React.FC = () => {
       userProfile={profile}
       onAddReservation={() => setIsReservationModalOpen(true)}
       onViewProfile={() => setIsProfileModalOpen(true)}
+      reservations={reservations}
     >
       <button 
         onClick={() => fetchData({ isManual: true })}

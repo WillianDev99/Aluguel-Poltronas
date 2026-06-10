@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserRole, UserProfile } from '../types';
+import { UserRole, UserProfile, Reservation } from '../types';
 import posleveLogoText from '../src/assets/posleve_logo_text.png';
 
 
@@ -12,12 +12,134 @@ interface LayoutProps {
   userProfile: UserProfile | null;
   onAddReservation?: () => void;
   onViewProfile?: () => void;
+  reservations?: Reservation[];
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleDarkMode, userProfile, onAddReservation, onViewProfile }) => {
+const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleDarkMode, userProfile, onAddReservation, onViewProfile, reservations }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isNotifOpen, setIsNotifOpen] = React.useState(false);
+  const notifRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const notificationItems = React.useMemo(() => {
+    if (!reservations) return [];
+
+    const now = new Date();
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    
+    const getLocalDateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const todayOnly = getLocalDateOnly(now);
+    const tomorrowOnly = new Date(todayOnly.getTime() + 24 * 60 * 60 * 1000);
+
+    const list: Array<{
+      id: string;
+      type: 'new_site_req' | 'pending_deposit' | 'collect_tomorrow' | 'collect_overdue';
+      title: string;
+      description: string;
+      timeLabel?: string;
+      reservation: Reservation;
+      color: string;
+      icon: string;
+    }> = [];
+
+    reservations.forEach(r => {
+      let returnDateOnly: Date | null = null;
+      if (r.return_date) {
+        try {
+          returnDateOnly = getLocalDateOnly(new Date(r.return_date));
+        } catch (_) {}
+      }
+
+      const isAwaitingOrInUse = r.status === 'aguardando retirada' || r.status === 'locação em uso';
+
+      // Type 4: Coleta Atrasada (Vencida)
+      if (isAwaitingOrInUse && returnDateOnly && returnDateOnly.getTime() < todayOnly.getTime()) {
+        const diffDays = Math.ceil((todayOnly.getTime() - returnDateOnly.getTime()) / (24 * 60 * 60 * 1000));
+        list.push({
+          id: `overdue-${r.id}`,
+          type: 'collect_overdue',
+          title: 'Coleta Atrasada 🚨',
+          description: `${r.clientName} - Poltrona ${r.vehiclePlate} (Atrasada há ${diffDays} dia${diffDays > 1 ? 's' : ''})`,
+          timeLabel: `Venceu em ${new Date(r.return_date).toLocaleDateString('pt-BR')}`,
+          reservation: r,
+          color: 'text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/30',
+          icon: 'warning',
+        });
+        return;
+      }
+
+      // Type 3: Coleta Amanhã
+      if (isAwaitingOrInUse && returnDateOnly && returnDateOnly.getTime() === tomorrowOnly.getTime()) {
+        list.push({
+          id: `tomorrow-${r.id}`,
+          type: 'collect_tomorrow',
+          title: 'Coleta para Amanhã 📅',
+          description: `${r.clientName} - Poltrona ${r.vehiclePlate}`,
+          timeLabel: 'Agendado para amanhã',
+          reservation: r,
+          color: 'text-amber-600 bg-amber-50 dark:bg-amber-955/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/30',
+          icon: 'today',
+        });
+        return;
+      }
+
+      // 2. Check site requests
+      if (r.origin === 'site' && r.status === 'aguardando retirada') {
+        const createdAtDate = r.created_at ? new Date(r.created_at) : null;
+        if (createdAtDate) {
+          const hasPaidDeposit = r.observations?.includes('[CAUCAO_PAGO]');
+          
+          if (createdAtDate >= twoHoursAgo) {
+            // Type 1: Nova solicitação do site (menos de 2h)
+            list.push({
+              id: `new-site-${r.id}`,
+              type: 'new_site_req',
+              title: 'Nova Reserva Online ✨',
+              description: `${r.clientName} solicitou pelo site - Poltrona ${r.vehiclePlate}`,
+              timeLabel: `Recebido às ${createdAtDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+              reservation: r,
+              color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-955/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30',
+              icon: 'fiber_new',
+            });
+          } else if (!hasPaidDeposit) {
+            // Type 2: Solicitação do site sem caução (> 2h)
+            const diffHours = Math.floor((now.getTime() - createdAtDate.getTime()) / (60 * 60 * 1000));
+            list.push({
+              id: `pending-deposit-${r.id}`,
+              type: 'pending_deposit',
+              title: 'Aguardando Caução ⏳',
+              description: `${r.clientName} - Reserva no site há ${diffHours}h sem pagamento do caução.`,
+              timeLabel: `Criada em ${createdAtDate.toLocaleDateString('pt-BR')} às ${createdAtDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+              reservation: r,
+              color: 'text-sky-600 bg-sky-50 dark:bg-sky-955/20 dark:text-sky-400 border-sky-100 dark:border-sky-900/30',
+              icon: 'hourglass_empty',
+            });
+          }
+        }
+      }
+    });
+
+    const priority = {
+      collect_overdue: 0,
+      pending_deposit: 1,
+      new_site_req: 2,
+      collect_tomorrow: 3
+    };
+    list.sort((a, b) => priority[a.type] - priority[b.type]);
+
+    return list;
+  }, [reservations]);
 
   const menuItems = [
     { id: 'DASHBOARD', path: '/dashboard', label: 'Painel', icon: 'dashboard', roles: ['admin', 'user'] },
@@ -131,9 +253,89 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
           </div>
           <div className="flex items-center gap-1.5 sm:gap-6">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <button className="hidden sm:flex size-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
+            <div className="relative" ref={notifRef}>
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className={`hidden sm:flex size-10 items-center justify-center rounded-xl transition-all relative ${
+                  notificationItems.length > 0 
+                    ? 'bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/20' 
+                    : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white'
+                }`}
+                title="Notificações"
+              >
                 <span className="material-symbols-outlined text-lg">notifications</span>
+                {notificationItems.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-950 animate-bounce">
+                    {notificationItems.length}
+                  </span>
+                )}
               </button>
+
+              {/* Popover list */}
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-2.5 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-xl z-50 overflow-hidden transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-amber-500 text-lg">notifications_active</span>
+                      <h3 className="font-display font-bold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Alertas Operacionais</h3>
+                    </div>
+                    {notificationItems.length > 0 && (
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase">
+                        {notificationItems.length} ativo{notificationItems.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/40">
+                    {notificationItems.length === 0 ? (
+                      <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
+                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 mb-2">notifications_off</span>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Tudo sob controle!</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Nenhum alerta pendente no momento.</p>
+                      </div>
+                    ) : (
+                      notificationItems.map(item => (
+                        <div 
+                          key={item.id}
+                          onClick={() => {
+                            navigate('/reservations');
+                            setIsNotifOpen(false);
+                          }}
+                          className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer flex gap-3 transition-colors group"
+                        >
+                          <div className={`size-9 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+                            <span className="material-symbols-outlined text-base">{item.icon}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className="text-xs font-bold text-slate-800 dark:text-white truncate">{item.title}</h4>
+                              {item.timeLabel && (
+                                <span className="text-[9px] text-slate-400 dark:text-slate-500 shrink-0 font-medium">{item.timeLabel}</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed group-hover:text-primary dark:group-hover:text-brand-teal transition-colors font-medium">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <div className="p-2.5 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 text-center">
+                    <button 
+                      onClick={() => {
+                        navigate('/reservations');
+                        setIsNotifOpen(false);
+                      }}
+                      className="text-[10px] font-bold text-primary dark:text-brand-teal hover:underline tracking-wider uppercase"
+                    >
+                      Ver Todas as Reservas
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
               <button
                 onClick={toggleDarkMode}
                 className="size-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors"
