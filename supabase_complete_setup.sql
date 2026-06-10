@@ -174,3 +174,23 @@ VALUES ('Contrato Padrão Midas', '
 <p style="text-align: center;">{{CLIENT_NAME}}</p>
 ', '1.0')
 ON CONFLICT DO NOTHING;
+
+-- Função RPC segura para excluir usuários de auth.users e cascade deletar perfis
+CREATE OR REPLACE FUNCTION public.delete_user_by_id(target_user_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  caller_role TEXT;
+BEGIN
+  -- Buscar o cargo de quem está executando a função
+  SELECT role INTO caller_role FROM public.profiles WHERE id = auth.uid();
+  
+  -- Verificar se quem está chamando é um admin
+  IF caller_role != 'admin' THEN
+    RAISE EXCEPTION 'Apenas administradores podem excluir usuários.';
+  END IF;
+
+  -- Deletar da tabela auth.users (o cascade na FK do public.profiles irá deletar de profiles automaticamente)
+  DELETE FROM auth.users WHERE id = target_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
