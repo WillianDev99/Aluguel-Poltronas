@@ -61,7 +61,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
                     // Process client signature
                     if (savedContract.signature_url) {
-                        const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
                         
                         if (containerRegex.test(dbContent)) {
                             dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
@@ -82,7 +82,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
                     // Process landlord signature
                     if (landlordSigUrl) {
-                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
                         if (landlordContainerRegex.test(dbContent)) {
                             dbContent = dbContent.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
                         } else if (locadoraRegex.test(dbContent)) {
@@ -110,7 +110,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     const locadoraRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locadora\s*<\/div>)/i;
 
                     if (landlordSigUrl) {
-                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
                         if (landlordContainerRegex.test(filled)) {
                             filled = filled.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
                         } else if (locadoraRegex.test(filled)) {
@@ -162,7 +162,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             '{{INSURANCE_VALUE}}': money(vehicle?.default_insurance_value || 0),
             '{{CURRENT_DATE}}': new Date().toLocaleDateString('pt-BR'),
             '{{CLIENT_SIGNATURE_PLACEHOLDER}}': signatureUrl 
-                ? `<div id="client-signature-container" style="text-align: center; min-height: 50px;"><div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div></div>`
+                ? `<div id="client-signature-container" style="text-align: center; min-height: 50px;"><div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div></div>`
                 : `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`
         };
 

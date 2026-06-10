@@ -297,7 +297,7 @@ const PublicContractSignatureView: React.FC = () => {
 
         // Process client signature
         if (contract.status === 'assinado' && contract.signature_url) {
-            const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${contract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${contract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
             
             if (containerRegex.test(html)) {
                 html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
@@ -317,7 +317,7 @@ const PublicContractSignatureView: React.FC = () => {
 
         // Process landlord signature
         if (landlordSigUrl) {
-            const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
             if (landlordContainerRegex.test(html)) {
                 html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
             } else if (locadoraRegex.test(html)) {
@@ -430,7 +430,7 @@ const PublicContractSignatureView: React.FC = () => {
                                         <img 
                                             src={landlordSigUrl} 
                                             alt="Assinatura da Locadora" 
-                                            className="h-16 w-auto object-contain max-w-[200px]"
+                                            className="h-16 w-auto object-contain max-w-full"
                                         />
                                     ) : (
                                         <div className="font-bold text-slate-500 italic">
@@ -446,7 +446,7 @@ const PublicContractSignatureView: React.FC = () => {
                                     <img 
                                         src={contract.signature_url} 
                                         alt="Assinatura do Locatário" 
-                                        className="h-16 w-auto object-contain max-w-[200px]"
+                                        className="h-16 w-auto object-contain max-w-full"
                                     />
                                 </div>
                                 <div className="border-t border-slate-300 dark:border-slate-700 pt-1 font-bold">{contract.client_name}</div>
