@@ -32,3 +32,4 @@ brain/
 *.sln
 *.sw?
 .dyad/
+.vercel

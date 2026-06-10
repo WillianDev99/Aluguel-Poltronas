@@ -56,7 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-[#edf1f0] dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors relative overflow-hidden">
+    <div className="bg-[#edf1f0] dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Glow Orbs para fundo */}
       <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>

@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
   const currentItem = menuItems.find(item => item.path === location.pathname) || menuItems[0];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Sidebar Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -115,7 +115,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
         </div>
       </aside>
  
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-955 overflow-y-auto transition-colors">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-955 overflow-y-auto">
         <header className="sticky top-0 z-10 flex items-center justify-between px-3 sm:px-8 py-2.5 sm:py-4 bg-white/80 dark:bg-slate-955/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/80">
           <div className="flex items-center gap-2 sm:gap-4">
             <button

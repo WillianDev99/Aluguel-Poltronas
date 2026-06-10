@@ -342,6 +342,7 @@ const PublicLanding: React.FC = () => {
   });
 
   const [selectedPlanId, setSelectedPlanId] = useState<'essencial' | 'plus' | 'premium' | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Modal states
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -588,12 +589,45 @@ const PublicLanding: React.FC = () => {
     }
   };
 
-  // Convert uploaded files to base64
-  const convertFileToBase64 = (file: File): Promise<string> => {
+  // Convert and compress uploaded files using Canvas
+  const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.75): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = (err) => reject(err);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
       reader.readAsDataURL(file);
     });
   };
@@ -601,16 +635,14 @@ const PublicLanding: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'docBase64' | 'addressProofBase64' | 'selfieBase64') => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('A imagem excede o tamanho máximo de 2MB.');
-        return;
-      }
+      const loadToast = toast.loading('Processando e otimizando imagem...');
       try {
-        const base64 = await convertFileToBase64(file);
+        const base64 = await compressImage(file);
         setBookingForm(prev => ({ ...prev, [field]: base64 }));
-        toast.success('Imagem carregada com sucesso!');
+        toast.success('Imagem carregada e otimizada!', { id: loadToast });
       } catch (err) {
-        toast.error('Erro ao processar imagem.');
+        console.error(err);
+        toast.error('Erro ao processar imagem.', { id: loadToast });
       }
     }
   };
@@ -663,34 +695,16 @@ const PublicLanding: React.FC = () => {
       return;
     }
 
-    const checkToast = toast.loading('Verificando disponibilidade de estoque...');
-    try {
-      const { data: conflicts, error: checkError } = await supabase
-        .from('reservations')
-        .select('id, vehicle_id, pickup_date, return_date, status')
-        .neq('status', 'reserva cancelada')
-        .neq('status', 'reserva perdida')
-        .neq('status', 'locação concluída');
-
-      if (checkError) throw checkError;
-
-      const resList = conflicts || [];
-      setAllReservations(resList);
-
-      const avail = getAvailableCountForPeriod(bookingForm.pickupDate, bookingForm.returnDate, resList);
-      if (avail < bookingForm.quantity) {
-        const nextDate = getNextAvailableDateForQuantity(bookingForm.pickupDate, bookingForm.returnDate, bookingForm.quantity, resList);
-        const dateStr = nextDate ? nextDate.toLocaleDateString('pt-BR') : 'um período futuro';
-        toast.error(`Infelizmente, só temos ${avail} poltrona(s) disponível(eis) no período selecionado. A próxima data com estoque suficiente é a partir de ${dateStr}.`, { id: checkToast });
-        return;
-      }
-      
-      toast.dismiss(checkToast);
-      setBookingStep(2);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Erro ao verificar disponibilidade.', { id: checkToast });
+    // Instantly check local allReservations state to be snappy
+    const avail = getAvailableCountForPeriod(bookingForm.pickupDate, bookingForm.returnDate, allReservations);
+    if (avail < bookingForm.quantity) {
+      const nextDate = getNextAvailableDateForQuantity(bookingForm.pickupDate, bookingForm.returnDate, bookingForm.quantity, allReservations);
+      const dateStr = nextDate ? nextDate.toLocaleDateString('pt-BR') : 'um período futuro';
+      toast.error(`Infelizmente, só temos ${avail} poltrona(s) disponível(eis) no período selecionado. A próxima data com estoque suficiente é a partir de ${dateStr}.`);
+      return;
     }
+    
+    setBookingStep(2);
   };
 
   const handleServiceToggle = (serviceId: string) => {
@@ -904,7 +918,7 @@ const PublicLanding: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#edf1f0] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans selection:bg-primary selection:text-white">
+    <div className="relative overflow-x-hidden w-full bg-[#edf1f0] dark:bg-slate-955 text-slate-800 dark:text-slate-100 font-sans selection:bg-primary selection:text-white">
       {/* Glow Orbs de Fundo para Estética Moderna */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -915,20 +929,88 @@ const PublicLanding: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4 sm:gap-8">
-          <div className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-650 dark:text-slate-400 uppercase tracking-wider">
+          <div className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-655 dark:text-slate-400 uppercase tracking-wider">
             <a href="#acervo" className="hover:text-primary dark:hover:text-white transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-accent-coral hover:after:w-full after:transition-all">Nosso Acervo</a>
             <a href="#sobre" className="hover:text-primary dark:hover:text-white transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-accent-coral hover:after:w-full after:transition-all">Quem Somos</a>
             <a href="#contato" className="hover:text-primary dark:hover:text-white transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-accent-coral hover:after:w-full after:transition-all">Contato</a>
+            <button 
+              onClick={() => navigate('/login')}
+              className="px-5 py-2 bg-gradient-to-r from-primary to-primary-hover text-white rounded-full font-bold text-xs hover:shadow-lg hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">lock</span>
+              <span>Área Restrita</span>
+            </button>
           </div>
-          <button 
-            onClick={() => navigate('/login')}
-            className="px-3.5 sm:px-5 py-2 bg-gradient-to-r from-primary to-primary-hover text-white rounded-full font-bold text-xs hover:shadow-lg hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2"
+          
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden size-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors"
+            title="Menu"
           >
-            <span className="material-symbols-outlined text-base">lock</span>
-            <span className="text-[10px] sm:text-xs">Área Restrita</span>
+            <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden flex justify-end no-print">
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+          <div className="relative w-64 max-w-xs h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col p-6 animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-sm font-black text-primary dark:text-white uppercase tracking-wider">Menu</span>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="size-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <nav className="flex flex-col gap-4 text-sm font-semibold uppercase tracking-wider">
+              <a 
+                href="#acervo" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-2.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary transition-colors flex items-center gap-3"
+              >
+                <span className="material-symbols-outlined text-lg">chair</span>
+                Nosso Acervo
+              </a>
+              <a 
+                href="#sobre" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-2.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary transition-colors flex items-center gap-3"
+              >
+                <span className="material-symbols-outlined text-lg">groups</span>
+                Quem Somos
+              </a>
+              <a 
+                href="#contato" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-2.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary transition-colors flex items-center gap-3"
+              >
+                <span className="material-symbols-outlined text-lg">call</span>
+                Contato
+              </a>
+              
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
+              
+              <button 
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate('/login');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-primary to-primary-hover text-white rounded-xl font-bold text-xs hover:shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-widest mt-2"
+              >
+                <span className="material-symbols-outlined text-base">lock</span>
+                Área Restrita
+              </button>
+            </nav>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative pt-24 sm:pt-36 pb-12 sm:pb-24 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 items-center no-print">
@@ -2100,7 +2182,7 @@ const PublicLanding: React.FC = () => {
                     return (
                       <>
                         <div className="w-full overflow-x-auto p-1.5 md:p-0 flex justify-start md:justify-center">
-                          <div className="print-area w-full min-w-[580px] sm:min-w-0 bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden text-left max-w-2xl mx-auto">
+                          <div className="print-area w-full min-w-0 sm:min-w-[580px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden text-left max-w-2xl mx-auto">
                             <div className="p-6 bg-slate-50 border-b border-slate-200">
                               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex items-center gap-2">
