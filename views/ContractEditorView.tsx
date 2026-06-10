@@ -206,7 +206,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
             {isLoading && (
                 <div className="fixed inset-0 z-[120] bg-white/80 backdrop-blur-sm flex items-center justify-center">
-                    <span className="animate-spin material-symbols-outlined text-4xl text-primary">progress_activity</span>
+                    <div className="size-10 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin"></div>
                 </div>
             )}
         </div>

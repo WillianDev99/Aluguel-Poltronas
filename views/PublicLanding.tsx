@@ -1199,7 +1199,7 @@ const PublicLanding: React.FC = () => {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <span className="animate-spin material-symbols-outlined text-4xl text-primary">progress_activity</span>
+              <div className="size-10 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin"></div>
               <p className="text-slate-400 font-semibold text-sm">Carregando dados do estoque...</p>
             </div>
           ) : vehicles.length === 0 ? (

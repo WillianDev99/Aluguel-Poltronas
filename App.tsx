@@ -295,7 +295,7 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     return (
       <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <span className="animate-spin material-symbols-outlined text-5xl text-primary">progress_activity</span>
+          <div className="size-12 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin"></div>
           <p className="text-primary/60 font-bold animate-pulse">Validando acesso...</p>
         </div>
       </div>
@@ -319,7 +319,7 @@ const App: React.FC = () => {
   return (
     <>
       <Toaster position="top-right" />
-      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><span className="animate-spin material-symbols-outlined text-3xl text-primary/20">progress_activity</span></div>}>
+      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="size-10 border-4 border-slate-200 dark:border-slate-800 border-t-primary/40 rounded-full animate-spin"></div></div>}>
         <Routes>
           <Route path="/" element={<PublicLanding />} />
           <Route path="/login" element={<Login onLogin={() => navigate('/dashboard', { replace: true })} />} />
