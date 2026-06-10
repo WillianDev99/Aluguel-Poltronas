@@ -146,8 +146,13 @@ const LandlordSignatureView: React.FC = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ signature_url: signatureBase64 })
-                .eq('id', profile.id);
+                .upsert({ 
+                    id: profile.id, 
+                    email: profile.email || 'administrador@posleve.com.br',
+                    full_name: profile.full_name || 'Administrador PÓS LEVE',
+                    role: profile.role || 'admin',
+                    signature_url: signatureBase64 
+                });
 
             if (error) throw error;
 
