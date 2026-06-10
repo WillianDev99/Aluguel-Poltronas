@@ -256,98 +256,103 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {clients.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
-                            {c.name.split(' ').map(n => n[0]).join('')}
+                  {clients.map((c, index) => {
+                    const rowBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-800/10';
+                    return (
+                      <tr key={c.id} className={`${rowBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                              {c.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-900 dark:text-white">{c.name}</span>
+                              <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{c.email}</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{c.name}</span>
-                            <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{c.email}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono whitespace-nowrap">
+                          <div>{c.cpf}</div>
+                          <div className="text-[10px] opacity-70">RG: {c.rg || 'N/A'}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <span 
+                              title={c.cnh_url ? "RG/CPF Anexado" : "RG/CPF Pendente"} 
+                              className={`material-symbols-outlined text-lg ${c.cnh_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                            >
+                              assignment_ind
+                            </span>
+                            <span 
+                              title={c.address_proof_url ? "Endereço Anexado" : "Endereço Pendente"} 
+                              className={`material-symbols-outlined text-lg ${c.address_proof_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                            >
+                              home_pin
+                            </span>
+                            <span 
+                              title={c.selfie_url ? "Selfie Anexada" : "Selfie Pendente"} 
+                              className={`material-symbols-outlined text-lg ${c.selfie_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                            >
+                              photo_camera
+                            </span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono whitespace-nowrap">
-                        <div>{c.cpf}</div>
-                        <div className="text-[10px] opacity-70">RG: {c.rg || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <span 
-                            title={c.cnh_url ? "RG/CPF Anexado" : "RG/CPF Pendente"} 
-                            className={`material-symbols-outlined text-lg ${c.cnh_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
-                          >
-                            badge
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          {c.city} / {c.state}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                            }`}>
+                            {c.status}
                           </span>
-                          <span 
-                            title={c.address_proof_url ? "Comprovante de Residência Anexado" : "Comprovante de Residência Pendente"} 
-                            className={`material-symbols-outlined text-lg ${c.address_proof_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                        </td>
+                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => {
+                              setEditingClient(c);
+                              setFormData({
+                                name: c.name,
+                                cpf: c.cpf,
+                                rg: c.rg,
+                                birth_date: c.birth_date,
+                                cnh_number: c.cnh_number,
+                                cnh_category: c.cnh_category,
+                                cnh_expiration: c.cnh_expiration,
+                                email: c.email,
+                                phone: c.phone,
+                                cep: c.cep,
+                                street: c.street,
+                                number: c.number,
+                                neighborhood: c.neighborhood,
+                                city: c.city,
+                                state: c.state,
+                                status: c.status,
+                                vip: c.vip,
+                                score: c.score,
+                                cnh_url: c.cnh_url || '',
+                                address_proof_url: c.address_proof_url || '',
+                                selfie_url: c.selfie_url || ''
+                              });
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1 hover:text-primary dark:hover:text-accent-sunshine text-slate-400 transition-colors"
                           >
-                            home_pin
-                          </span>
-                          <span 
-                            title={c.selfie_url ? "Selfie Anexada" : "Selfie Pendente"} 
-                            className={`material-symbols-outlined text-lg ${c.selfie_url ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}
+                            <span className="material-symbols-outlined text-lg">edit</span>
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`Tem certeza que deseja excluir o cliente "${c.name}"?`)) {
+                                await onDeleteClient(c.id);
+                              }
+                            }}
+                            className="p-1 hover:text-rose-500 text-slate-400 transition-colors"
                           >
-                            add_a_photo
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">{c.city} / {c.state}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
-                          }`}>
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setEditingClient(c);
-                            setFormData({
-                              name: c.name,
-                              cpf: c.cpf,
-                              rg: c.rg,
-                              birth_date: c.birth_date,
-                              cnh_number: c.cnh_number,
-                              cnh_category: c.cnh_category,
-                              cnh_expiration: c.cnh_expiration,
-                              email: c.email,
-                              phone: c.phone,
-                              cep: c.cep,
-                              street: c.street,
-                              number: c.number,
-                              neighborhood: c.neighborhood,
-                              city: c.city,
-                              state: c.state,
-                              status: c.status,
-                              vip: c.vip,
-                              score: c.score,
-                              cnh_url: c.cnh_url || '',
-                              address_proof_url: c.address_proof_url || '',
-                              selfie_url: c.selfie_url || ''
-                            });
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1 hover:text-primary dark:hover:text-accent-sunshine text-slate-400 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-lg">edit</span>
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (window.confirm(`Tem certeza que deseja excluir o cliente "${c.name}"?`)) {
-                              await onDeleteClient(c.id);
-                            }
-                          }}
-                          className="p-1 hover:text-rose-500 text-slate-400 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-lg">delete</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {clients.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">Nenhum cliente encontrado no banco de dados.</td>
@@ -358,12 +363,13 @@ const ClientsView: React.FC<ClientsViewProps> = ({ clients, onAddClient, onUpdat
 
               {/* Mobile View (Cards) */}
               <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-                {clients.map((c) => {
+                {clients.map((c, index) => {
                   const isExpanded = expandedClientId === c.id;
+                  const cardBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/45 dark:bg-slate-800/15';
                   return (
                     <div 
                       key={c.id} 
-                      className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                      className={`p-4 space-y-3 ${cardBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}
                     >
                       {/* Header row: Name, Avatar & Status */}
                       <div 

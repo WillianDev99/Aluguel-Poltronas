@@ -274,45 +274,48 @@ const Dashboard: React.FC<DashboardProps> = ({ vehicles = [], reservations = [],
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {recentReservations.map((res) => (
-                  <tr key={res.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-primary dark:text-[#65b0b4] whitespace-nowrap">#{res.id.substring(0, 8).toUpperCase()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="size-7 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs font-bold dark:text-white">
-                          {res.clientName?.split(' ').map(n => n[0]).join('') || '??'}
+                {recentReservations.map((res, index) => {
+                  const rowBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-800/10';
+                  return (
+                    <tr key={res.id} className={`${rowBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}>
+                      <td className="px-6 py-4 font-mono font-bold text-primary dark:text-[#65b0b4] whitespace-nowrap">#{res.id.substring(0, 8).toUpperCase()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs font-bold dark:text-white">
+                            {res.clientName?.split(' ').map(n => n[0]).join('') || '??'}
+                          </div>
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{res.clientName}</span>
                         </div>
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{res.clientName}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
-                        res.origin === 'site' 
-                          ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400' 
-                          : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-405'
-                      }`}>
-                        {res.origin === 'site' ? 'Site / Online' : 'Balcão / Painel'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(res.status)}`}>
-                        {getFriendlyStatus(res.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${
-                        res.observations?.includes('[CAUCAO_PAGO]')
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-250 dark:bg-emerald-950/10 dark:text-emerald-400'
-                          : 'bg-amber-50 text-amber-700 border-amber-250 dark:bg-amber-950/10 dark:text-amber-400'
-                      }`}>
-                        {res.observations?.includes('[CAUCAO_PAGO]') ? 'Pago' : 'Pendente'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-550 dark:text-slate-400 text-right font-semibold whitespace-nowrap">
-                      {res.dateStr}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                          res.origin === 'site' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-955/20 dark:text-blue-400' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-405'
+                        }`}>
+                          {res.origin === 'site' ? 'Site / Online' : 'Balcão / Painel'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(res.status)}`}>
+                          {getFriendlyStatus(res.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${
+                          res.observations?.includes('[CAUCAO_PAGO]')
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-250 dark:bg-emerald-950/10 dark:text-emerald-400'
+                            : 'bg-amber-50 text-amber-700 border-amber-250 dark:bg-amber-955/10 dark:text-amber-400'
+                        }`}>
+                          {res.observations?.includes('[CAUCAO_PAGO]') ? 'Pago' : 'Pendente'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-550 dark:text-slate-400 text-right font-semibold whitespace-nowrap">
+                        {res.dateStr}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {recentReservations.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-6 py-10 text-center text-slate-500 italic">Nenhuma reserva cadastrada.</td>

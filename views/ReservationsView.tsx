@@ -140,218 +140,222 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredReservations.map((res) => (
-                  <React.Fragment key={res.id}>
-                    <tr 
-                      onClick={(e) => {
-                        const target = e.target as HTMLElement;
-                        if (target.closest('button') || target.closest('.relative') || target.tagName === 'BUTTON') {
-                          return;
-                        }
-                        setExpandedResId(expandedResId === res.id ? null : res.id);
-                      }}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-primary dark:text-accent-sunshine font-bold text-xs">
-                            {res.clientName?.split(' ').map(n => n[0]).join('') || '?'}
-                          </div>
-                          <span className="text-sm font-semibold text-slate-900 dark:text-white">{res.clientName}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">
-                        {res.vehiclePlate}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.pickup_date)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.return_date)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2 relative">
-                          <div className="flex flex-col gap-1 items-stretch w-20">
-                            <button onClick={() => setEditingContractRes(res)} className="py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-95 border border-emerald-500/20 text-center">
-                              Contrato
-                            </button>
-                            <button onClick={() => onEmitVoucher(res)} className="py-1 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-[10px] font-bold hover:bg-primary hover:text-white transition-all active:scale-95 border border-primary/20 text-center">
-                              Voucher
-                            </button>
-                          </div>
-                          <div className="relative">
-                            <button onClick={() => setActiveMenu(activeMenu === res.id ? null : res.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
-                              <span className="material-symbols-outlined">more_vert</span>
-                            </button>
-                            {activeMenu === res.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-1 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                                {res.status === 'aguardando retirada' && (
-                                  <button onClick={() => { setProcessingPickupRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
-                                    <span className="material-symbols-outlined text-lg">local_shipping</span>
-                                    Concluir Entrega
-                                  </button>
-                                )}
-                                {res.status === 'locação em uso' && (
-                                  <button onClick={() => { setProcessingReturnRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                                    <span className="material-symbols-outlined text-lg">assignment_turned_in</span>
-                                    Concluir Locação
-                                  </button>
-                                )}
-                                {(res.status === 'locação em uso' || res.status === 'locação concluída') && (
-                                  <button onClick={() => { setViewingReportRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary dark:text-accent-sunshine font-bold hover:bg-primary/5 transition-colors">
-                                    <span className="material-symbols-outlined text-lg">analytics</span>
-                                    Relatório Vistoria
-                                  </button>
-                                )}
-                                <button onClick={() => { setEditingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium">
-                                  <span className="material-symbols-outlined text-lg">edit</span>
-                                  Editar Reserva
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
-                                    let newObs = res.observations || '';
-                                    if (isPaid) {
-                                      newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
-                                    } else {
-                                      if (!newObs.includes('[CAUCAO_PAGO]')) {
-                                        newObs = `${newObs} [CAUCAO_PAGO]`.trim();
-                                      }
-                                    }
-                                    await onUpdateReservation(res.id, { observations: newObs });
-                                    toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
-                                    setActiveMenu(null);
-                                  }}
-                                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
-                                >
-                                  <span className="material-symbols-outlined text-lg">payments</span>
-                                  {res.observations?.includes('[CAUCAO_PAGO]') ? 'Caução Pendente' : 'Confirmar Caução Pago'}
-                                </button>
-                                <button onClick={async () => { if (window.confirm('Tem certeza que deseja excluir esta reserva?')) { await onDeleteReservation(res.id); setActiveMenu(null); } }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
-                                  <span className="material-symbols-outlined text-lg">delete</span>
-                                  Excluir Reserva
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    
-                    {/* Collapsible expanded detail view row */}
-                    {expandedResId === res.id && (
-                      <tr className="bg-slate-50/50 dark:bg-slate-900/30">
-                        <td colSpan={5} className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-white dark:bg-slate-850 rounded-2xl border border-slate-200/60 dark:border-slate-850 shadow-inner max-w-5xl">
-                            {/* Col 1: Status & Caução */}
-                            <div className="space-y-4">
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Status da Locação</span>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusStyle(res.status)}`}>
-                                  {getFriendlyStatus(res.status)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Controle de Caução</span>
-                                <button
-                                  onClick={async () => {
-                                    const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
-                                    let newObs = res.observations || '';
-                                    if (isPaid) {
-                                      newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
-                                    } else {
-                                      if (!newObs.includes('[CAUCAO_PAGO]')) {
-                                        newObs = `${newObs} [CAUCAO_PAGO]`.trim();
-                                      }
-                                    }
-                                    await onUpdateReservation(res.id, { observations: newObs });
-                                    toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
-                                  }}
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all hover:scale-[1.02] active:scale-95 ${
-                                    res.observations?.includes('[CAUCAO_PAGO]')
-                                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30'
-                                      : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200 dark:border-amber-900/30'
-                                  }`}
-                                >
-                                  <span className="material-symbols-outlined text-base">
-                                    {res.observations?.includes('[CAUCAO_PAGO]') ? 'check_circle' : 'pending'}
-                                  </span>
-                                  {res.observations?.includes('[CAUCAO_PAGO]') ? 'Caução Pago (Confirmado)' : 'Caução Pendente (Confirmar)'}
-                                </button>
-                              </div>
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Origem do Pedido</span>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                  res.origin === 'site'
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200'
-                                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-450 border-slate-200'
-                                }`}>
-                                  {res.origin === 'site' ? 'Site / Online' : 'Painel / Balcão'}
-                                </span>
-                              </div>
+                {filteredReservations.map((res, index) => {
+                  const rowBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-800/10';
+                  return (
+                    <React.Fragment key={res.id}>
+                      <tr 
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.closest('button') || target.closest('.relative') || target.tagName === 'BUTTON') {
+                            return;
+                          }
+                          setExpandedResId(expandedResId === res.id ? null : res.id);
+                        }}
+                        className={`${rowBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors group cursor-pointer`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-primary dark:text-accent-sunshine font-bold text-xs">
+                              {res.clientName?.split(' ').map(n => n[0]).join('') || '?'}
                             </div>
-
-                            {/* Col 2: Valores */}
-                            <div className="space-y-2.5 border-l border-r border-slate-100 dark:border-slate-800/60 px-0 sm:px-6">
-                              <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Detalhamento Financeiro</span>
-                              <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                                <span>Diária da Poltrona:</span>
-                                <span className="font-semibold text-slate-800 dark:text-white">R$ {res.daily_rate?.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                                <span>Período contratado:</span>
-                                <span className="font-semibold text-slate-800 dark:text-white">{res.days} dia{res.days > 1 ? 's' : ''}</span>
-                              </div>
-                              {res.insurance_value > 0 && (
-                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                                  <span>Taxa de Seguro/Garantia:</span>
-                                  <span className="font-semibold text-slate-800 dark:text-white">R$ {res.insurance_value.toFixed(2)}</span>
-                                </div>
-                              )}
-                              {res.security_deposit > 0 && (
-                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                                  <span>Caução de Segurança:</span>
-                                  <span className="font-semibold text-slate-800 dark:text-white">R$ {res.security_deposit.toFixed(2)}</span>
-                                </div>
-                              )}
-                              <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
-                              <div className="flex justify-between text-sm font-bold text-primary dark:text-brand-teal">
-                                <span>Valor Total:</span>
-                                <span>R$ {res.total_value?.toFixed(2)}</span>
-                              </div>
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{res.clientName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">
+                          {res.vehiclePlate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.pickup_date)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.return_date)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-2 relative">
+                            <div className="flex flex-col gap-1 items-stretch w-20">
+                              <button onClick={() => setEditingContractRes(res)} className="py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-95 border border-emerald-500/20 text-center">
+                                Contrato
+                              </button>
+                              <button onClick={() => onEmitVoucher(res)} className="py-1 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-[10px] font-bold hover:bg-primary hover:text-white transition-all active:scale-95 border border-primary/20 text-center">
+                                Voucher
+                              </button>
                             </div>
-
-                            {/* Col 3: Serviços & Observações */}
-                            <div className="space-y-3">
-                              {res.additional_services && (
-                                <div>
-                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Serviços Adicionais</span>
-                                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800/40">
-                                    {res.additional_services.split(',').map(s => s.trim()).join(', ')}
-                                  </p>
+                            <div className="relative">
+                              <button onClick={() => setActiveMenu(activeMenu === res.id ? null : res.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                                <span className="material-symbols-outlined">more_vert</span>
+                              </button>
+                              {activeMenu === res.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-1 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                                  {res.status === 'aguardando retirada' && (
+                                    <button onClick={() => { setProcessingPickupRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                      <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                      Concluir Entrega
+                                    </button>
+                                  )}
+                                  {res.status === 'locação em uso' && (
+                                    <button onClick={() => { setProcessingReturnRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                                      <span className="material-symbols-outlined text-lg">assignment_turned_in</span>
+                                      Concluir Locação
+                                    </button>
+                                  )}
+                                  {(res.status === 'locação em uso' || res.status === 'locação concluída') && (
+                                    <button onClick={() => { setViewingReportRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary dark:text-accent-sunshine font-bold hover:bg-primary/5 transition-colors">
+                                      <span className="material-symbols-outlined text-lg">analytics</span>
+                                      Relatório Vistoria
+                                    </button>
+                                  )}
+                                  <button onClick={() => { setEditingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium">
+                                    <span className="material-symbols-outlined text-lg">edit</span>
+                                    Editar Reserva
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
+                                      let newObs = res.observations || '';
+                                      if (isPaid) {
+                                        newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
+                                      } else {
+                                        if (!newObs.includes('[CAUCAO_PAGO]')) {
+                                          newObs = `${newObs} [CAUCAO_PAGO]`.trim();
+                                        }
+                                      }
+                                      await onUpdateReservation(res.id, { observations: newObs });
+                                      toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
+                                      setActiveMenu(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
+                                  >
+                                    <span className="material-symbols-outlined text-lg">payments</span>
+                                    {res.observations?.includes('[CAUCAO_PAGO]') ? 'Caução Pendente' : 'Confirmar Caução Pago'}
+                                  </button>
+                                  <button onClick={async () => { if (window.confirm('Tem certeza que deseja excluir esta reserva?')) { await onDeleteReservation(res.id); setActiveMenu(null); } }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                    Excluir Reserva
+                                  </button>
                                 </div>
                               )}
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Observações do Contrato</span>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/40 min-h-[50px] whitespace-pre-line">
-                                  {res.observations?.replace('[CAUCAO_PAGO]', '').trim() || 'Nenhuma observação registrada.'}
-                                </p>
-                              </div>
                             </div>
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                ))}
+                      
+                      {/* Collapsible expanded detail view row */}
+                      {expandedResId === res.id && (
+                        <tr className="bg-slate-50/50 dark:bg-slate-900/30">
+                          <td colSpan={5} className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-white dark:bg-slate-850 rounded-2xl border border-slate-200/60 dark:border-slate-850 shadow-inner max-w-5xl">
+                              {/* Col 1: Status & Caução */}
+                              <div className="space-y-4">
+                                <div>
+                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Status da Locação</span>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusStyle(res.status)}`}>
+                                    {getFriendlyStatus(res.status)}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Controle de Caução</span>
+                                  <button
+                                    onClick={async () => {
+                                      const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
+                                      let newObs = res.observations || '';
+                                      if (isPaid) {
+                                        newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
+                                      } else {
+                                        if (!newObs.includes('[CAUCAO_PAGO]')) {
+                                          newObs = `${newObs} [CAUCAO_PAGO]`.trim();
+                                        }
+                                      }
+                                      await onUpdateReservation(res.id, { observations: newObs });
+                                      toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all hover:scale-[1.02] active:scale-95 ${
+                                      res.observations?.includes('[CAUCAO_PAGO]')
+                                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30'
+                                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200 dark:border-amber-900/30'
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      {res.observations?.includes('[CAUCAO_PAGO]') ? 'check_circle' : 'pending'}
+                                    </span>
+                                    {res.observations?.includes('[CAUCAO_PAGO]') ? 'Caução Pago (Confirmado)' : 'Caução Pendente (Confirmar)'}
+                                  </button>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Origem do Pedido</span>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                    res.origin === 'site'
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200'
+                                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-455 border-slate-200'
+                                  }`}>
+                                    {res.origin === 'site' ? 'Site / Online' : 'Painel / Balcão'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Col 2: Valores */}
+                              <div className="space-y-2.5 border-l border-r border-slate-100 dark:border-slate-800/60 px-0 sm:px-6">
+                                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Detalhamento Financeiro</span>
+                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                                  <span>Diária da Poltrona:</span>
+                                  <span className="font-semibold text-slate-800 dark:text-white">R$ {res.daily_rate?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                                  <span>Período contratado:</span>
+                                  <span className="font-semibold text-slate-800 dark:text-white">{res.days} dia{res.days > 1 ? 's' : ''}</span>
+                                </div>
+                                {res.insurance_value > 0 && (
+                                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                                    <span>Taxa de Seguro/Garantia:</span>
+                                    <span className="font-semibold text-slate-800 dark:text-white">R$ {res.insurance_value.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {res.security_deposit > 0 && (
+                                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                                    <span>Caução de Segurança:</span>
+                                    <span className="font-semibold text-slate-800 dark:text-white">R$ {res.security_deposit.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
+                                <div className="flex justify-between text-sm font-bold text-primary dark:text-brand-teal">
+                                  <span>Valor Total:</span>
+                                  <span>R$ {res.total_value?.toFixed(2)}</span>
+                                </div>
+                              </div>
+
+                              {/* Col 3: Serviços & Observações */}
+                              <div className="space-y-3">
+                                {res.additional_services && (
+                                  <div>
+                                    <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Serviços Adicionais</span>
+                                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800/40">
+                                      {res.additional_services.split(',').map(s => s.trim()).join(', ')}
+                                    </p>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Observações do Contrato</span>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/40 min-h-[50px] whitespace-pre-line">
+                                    {res.observations?.replace('[CAUCAO_PAGO]', '').trim() || 'Nenhuma observação registrada.'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
 
             {/* Mobile View (Cards) */}
             <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-850/60">
-              {filteredReservations.map((res) => {
+              {filteredReservations.map((res, index) => {
                 const isExpanded = expandedResId === res.id;
                 const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
+                const cardBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/45 dark:bg-slate-800/15';
                 return (
                   <div 
                     key={res.id} 
-                    className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                    className={`p-4 space-y-3 ${cardBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}
                   >
                     {/* Header row: Client Name & Status badge */}
                     <div 

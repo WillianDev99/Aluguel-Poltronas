@@ -464,7 +464,7 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {vehicles.map((v) => {
+                  {vehicles.map((v, index) => {
                     // Find active overlapping reservation on reportDate
                     const res = (() => {
                       if (!reportDate) return null;
@@ -494,13 +494,14 @@ const VehiclesView: React.FC<VehiclesViewProps> = ({
                       }
                     } else if (v.status === 'Em manutenção') {
                       statusLabel = 'Higienização';
-                      statusClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-250';
+                      statusClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-green-400 border-blue-250';
                     }
                     
                     const isPaid = res?.observations?.includes('[CAUCAO_PAGO]');
+                    const rowBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-800/10';
                     
                     return (
-                      <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+                      <tr key={v.id} className={`${rowBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}>
                         <td className="px-4 py-3.5 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{v.plate}</td>
                         <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-bold border text-[10px] uppercase ${statusClass}`}>

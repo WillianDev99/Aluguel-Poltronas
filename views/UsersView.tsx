@@ -284,53 +284,56 @@ const UsersView: React.FC = () => {
                                         <tr>
                                             <td colSpan={4} className="px-6 py-10 text-center text-slate-400 text-sm italic">Nenhum usuário encontrado.</td>
                                         </tr>
-                                    ) : users.map((u) => (
-                                        <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
+                                    ) : users.map((u, index) => {
+                                        const rowBg = index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-800/10';
+                                        return (
+                                            <tr key={u.id} className={`${rowBg} hover:bg-slate-100/60 dark:hover:bg-slate-800/25 transition-colors`}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
+                                                            }`}>
+                                                            {(u.full_name || u.email)[0].toUpperCase()}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{u.full_name || 'Funcionário'}</span>
+                                                            <span className="text-xs text-slate-450 dark:text-slate-400">{u.email}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${u.role === 'admin'
+                                                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                            : 'bg-slate-100 text-slate-800 border border-slate-200'
                                                         }`}>
-                                                        {(u.full_name || u.email)[0].toUpperCase()}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-semibold text-slate-900 dark:text-white">{u.full_name || 'Funcionário'}</span>
-                                                        <span className="text-xs text-slate-450 dark:text-slate-400">{u.email}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${u.role === 'admin'
-                                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                                        : 'bg-slate-100 text-slate-800 border border-slate-200'
-                                                    }`}>
-                                                    {u.role === 'admin' ? 'Gerente' : 'Operador'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs text-slate-550 dark:text-slate-400 whitespace-nowrap">
-                                                {new Date(u.created_at).toLocaleDateString('pt-BR')} {new Date(u.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                            </td>
-                                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingUser(u);
-                                                        setEditName(u.full_name || '');
-                                                        setEditRole(u.role || 'user');
-                                                    }}
-                                                    className="p-1 text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-secondary transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <span className="material-symbols-outlined text-lg leading-none">edit</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setDeletingUser(u)}
-                                                    className="p-1 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-colors"
-                                                    title="Excluir"
-                                                >
-                                                    <span className="material-symbols-outlined text-lg leading-none">delete</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                        {u.role === 'admin' ? 'Gerente' : 'Operador'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-slate-550 dark:text-slate-400 whitespace-nowrap">
+                                                    {new Date(u.created_at).toLocaleDateString('pt-BR')} {new Date(u.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </td>
+                                                <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingUser(u);
+                                                            setEditName(u.full_name || '');
+                                                            setEditRole(u.role || 'user');
+                                                        }}
+                                                        className="p-1 text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-secondary transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg leading-none">edit</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeletingUser(u)}
+                                                        className="p-1 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg leading-none">delete</span>
+                                                    </button>
+                                                    </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
