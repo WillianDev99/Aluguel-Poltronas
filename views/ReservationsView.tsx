@@ -167,12 +167,14 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 font-medium">{formatDate(res.return_date)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2 relative">
-                          <button onClick={() => setEditingContractRes(res)} className="px-4 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-95 border border-emerald-500/20">
-                            Contrato
-                          </button>
-                          <button onClick={() => onEmitVoucher(res)} className="px-4 py-1.5 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-xs font-bold hover:bg-primary hover:text-white transition-all active:scale-95 border border-primary/20">
-                            Voucher
-                          </button>
+                          <div className="flex flex-col gap-1 items-stretch w-20">
+                            <button onClick={() => setEditingContractRes(res)} className="py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-95 border border-emerald-500/20 text-center">
+                              Contrato
+                            </button>
+                            <button onClick={() => onEmitVoucher(res)} className="py-1 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-[10px] font-bold hover:bg-primary hover:text-white transition-all active:scale-95 border border-primary/20 text-center">
+                              Voucher
+                            </button>
+                          </div>
                           <div className="relative">
                             <button onClick={() => setActiveMenu(activeMenu === res.id ? null : res.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                               <span className="material-symbols-outlined">more_vert</span>
