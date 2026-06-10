@@ -130,14 +130,6 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
             </h2>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-6">
-            <div className="relative hidden lg:block">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-              <input 
-                className="w-64 h-10 pl-10 pr-4 bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-primary/30 dark:focus:border-primary/50 focus:ring-2 focus:ring-primary/10 rounded-xl text-xs font-semibold focus:outline-0 transition-all text-slate-900 dark:text-white" 
-                placeholder="Pesquisar registro..." 
-                type="text" 
-              />
-            </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button className="hidden sm:flex size-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-lg">notifications</span>

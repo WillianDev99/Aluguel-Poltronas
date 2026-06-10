@@ -72,7 +72,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
  
       <div className="w-full max-w-[460px] flex flex-col items-center relative z-10">
         <div className="mb-6 flex flex-col items-center">
-          <img src={posleveLogoText} className="h-24 w-auto object-contain bg-white rounded-2xl p-2 border border-slate-150 shadow-sm" alt="PÓS LEVE" />
+          <img src={posleveLogoText} className="h-24 w-auto object-contain" alt="PÓS LEVE" />
           <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-3">Portal Administrativo</p>
         </div>
  
