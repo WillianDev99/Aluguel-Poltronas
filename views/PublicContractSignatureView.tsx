@@ -104,7 +104,7 @@ const PublicContractSignatureView: React.FC = () => {
                 if (clientErr) throw clientErr;
                 setClient(clientData);
                 setFullName(clientData.name || '');
-                setCpf(clientData.cpf || '');
+                setCpf('');
 
             } catch (err) {
                 console.error('Erro ao carregar dados do contrato:', err);
@@ -117,17 +117,20 @@ const PublicContractSignatureView: React.FC = () => {
         loadContractData();
     }, [contractId]);
 
-    // Canvas drawing helpers
-    const getCoordinates = (e: MouseEvent | TouchEvent) => {
+    const getCoordinates = (e: any) => {
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
         
-        if (e instanceof TouchEvent) {
-            if (e.touches.length === 0) return { x: 0, y: 0 };
+        if (e.touches && e.touches.length > 0) {
             return {
                 x: e.touches[0].clientX - rect.left,
                 y: e.touches[0].clientY - rect.top
+            };
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            return {
+                x: e.changedTouches[0].clientX - rect.left,
+                y: e.changedTouches[0].clientY - rect.top
             };
         } else {
             return {
@@ -270,6 +273,34 @@ const PublicContractSignatureView: React.FC = () => {
         );
     }
 
+    const getRenderedContent = () => {
+        if (!contract) return '';
+        let html = contract.content;
+        const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+        const divRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
+        const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>[\s\S]*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
+
+        if (contract.status === 'assinado' && contract.signature_url) {
+            const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${contract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            
+            if (containerRegex.test(html)) {
+                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+            } else if (divRegex.test(html)) {
+                html = html.replace(divRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+            } else if (locatarioRegex.test(html)) {
+                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>$2`);
+            }
+        } else {
+            // Pending, replace container content with empty spacer
+            if (containerRegex.test(html)) {
+                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+            } else if (locatarioRegex.test(html)) {
+                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
+            }
+        }
+        return html;
+    };
+
     const isSigned = contract.status === 'assinado';
 
     return (
@@ -356,7 +387,7 @@ const PublicContractSignatureView: React.FC = () => {
 
                     <div 
                         className="prose dark:prose-invert max-w-none text-xs leading-relaxed text-justify space-y-4 font-serif text-slate-800 dark:text-slate-200"
-                        dangerouslySetInnerHTML={{ __html: contract.content }}
+                        dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
                     />
 
                     {/* Integrated Signature rods in document */}

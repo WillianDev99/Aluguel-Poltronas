@@ -43,18 +43,27 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     }
 
                     let dbContent = savedContract.content;
+                    const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+                    const oldDivRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
+                    const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>[\s\S]*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
+
                     if (savedContract.signature_url) {
-                        // Replace signature placeholders or replace empty signature div with actual image above line
-                        if (dbContent.includes('{{CLIENT_SIGNATURE_PLACEHOLDER}}')) {
-                            dbContent = dbContent.replace(
-                                '{{CLIENT_SIGNATURE_PLACEHOLDER}}',
-                                `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
-                            );
-                        } else if (dbContent.includes('<div style="height: 50px;"></div>')) {
-                            dbContent = dbContent.replace(
-                                '<div style="height: 50px;"></div>',
-                                `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
-                            );
+                        const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        
+                        if (containerRegex.test(dbContent)) {
+                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                        } else if (oldDivRegex.test(dbContent)) {
+                            dbContent = dbContent.replace(oldDivRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                        } else if (dbContent.includes('{{CLIENT_SIGNATURE_PLACEHOLDER}}')) {
+                            dbContent = dbContent.replace('{{CLIENT_SIGNATURE_PLACEHOLDER}}', imgTag);
+                        } else if (locatarioRegex.test(dbContent)) {
+                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>$2`);
+                        }
+                    } else {
+                        if (containerRegex.test(dbContent)) {
+                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                        } else if (locatarioRegex.test(dbContent)) {
+                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
                         }
                     }
                     initialContent = dbContent;
@@ -104,8 +113,8 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             '{{INSURANCE_VALUE}}': money(vehicle?.default_insurance_value || 0),
             '{{CURRENT_DATE}}': new Date().toLocaleDateString('pt-BR'),
             '{{CLIENT_SIGNATURE_PLACEHOLDER}}': signatureUrl 
-                ? `<div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div>`
-                : `<div style="height: 50px;"></div>`
+                ? `<div id="client-signature-container" style="text-align: center; min-height: 50px;"><div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" /></div></div>`
+                : `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`
         };
 
         let result = text;
@@ -165,6 +174,51 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             toast.success('Contrato salvo com sucesso!');
         } catch (err: any) {
             toast.error('Erro ao salvar: ' + err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRequestNewSignature = async () => {
+        const confirm = window.confirm(
+            "Tem certeza de que deseja invalidar a assinatura atual deste contrato? O cliente precisará assinar novamente usando o mesmo link."
+        );
+        if (!confirm) return;
+
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from('rental_contracts')
+                .update({
+                    status: 'pendente',
+                    signature_url: null,
+                    signed_at: null,
+                    client_ip: null,
+                    client_user_agent: null,
+                    client_name: null,
+                    client_cpf: null
+                })
+                .eq('rental_id', reservation.id);
+
+            if (error) throw error;
+
+            toast.success('Assinatura invalidada com sucesso!');
+            setContractStatus('pendente');
+            setSignatureUrl(null);
+            setSignedAt(null);
+            setSignedInfo(null);
+
+            // Clean signature container in editor DOM
+            if (editorRef.current) {
+                let html = editorRef.current.innerHTML;
+                const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+                if (containerRegex.test(html)) {
+                    html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                }
+                editorRef.current.innerHTML = html;
+            }
+        } catch (err: any) {
+            toast.error('Erro ao invalidar assinatura: ' + err.message);
         } finally {
             setIsSaving(false);
         }
@@ -232,6 +286,16 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                         <span className="material-symbols-outlined text-lg">print</span>
                         Imprimir
                     </button>
+                    {isSigned && (
+                        <button 
+                            onClick={handleRequestNewSignature}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-bold text-sm transition-all shadow-lg disabled:opacity-50"
+                        >
+                            <span className="material-symbols-outlined text-lg">draw</span>
+                            Solicitar Nova Assinatura
+                        </button>
+                    )}
                     <button 
                         onClick={handleSave} 
                         disabled={isSaving || isSigned} 
