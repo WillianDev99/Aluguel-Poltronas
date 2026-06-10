@@ -124,11 +124,12 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto p-6">
+        <div className="overflow-auto max-h-[calc(100vh-280px)] p-0 sm:p-6">
           {isLoading ? (
             <TableSkeleton />
           ) : (
-            <table className="w-full text-left border-collapse">
+            <>
+              <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
@@ -340,6 +341,224 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile View (Cards) */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-850/60">
+              {filteredReservations.map((res) => {
+                const isExpanded = expandedResId === res.id;
+                const isPaid = res.observations?.includes('[CAUCAO_PAGO]');
+                return (
+                  <div 
+                    key={res.id} 
+                    className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                  >
+                    {/* Header row: Client Name & Status badge */}
+                    <div 
+                      className="flex justify-between items-start gap-2 cursor-pointer" 
+                      onClick={() => setExpandedResId(isExpanded ? null : res.id)}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-primary dark:text-accent-sunshine font-bold text-xs shrink-0">
+                          {res.clientName?.split(' ').map(n => n[0]).join('') || '?'}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{res.clientName}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-450 truncate">{res.vehicleModel} ({res.vehiclePlate})</p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusStyle(res.status)}`}>
+                        {getFriendlyStatus(res.status)}
+                      </span>
+                    </div>
+
+                    {/* Dates row */}
+                    <div 
+                      className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/30 cursor-pointer" 
+                      onClick={() => setExpandedResId(isExpanded ? null : res.id)}
+                    >
+                      <div>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Início / Entrega</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-350">{formatDate(res.pickup_date)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Devolução</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-350">{formatDate(res.return_date)}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions & expand toggle */}
+                    <div className="flex justify-between items-center pt-1">
+                      <div className="flex gap-1.5">
+                        <button onClick={() => setEditingContractRes(res)} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 active:scale-95 transition-all">
+                          Contrato
+                        </button>
+                        <button onClick={() => onEmitVoucher(res)} className="px-3 py-1.5 rounded-lg bg-primary/5 text-primary dark:text-accent-sunshine text-[11px] font-bold border border-primary/20 active:scale-95 transition-all">
+                          Voucher
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {/* More Actions dropdown button */}
+                        <div className="relative">
+                          <button onClick={() => setActiveMenu(activeMenu === res.id ? null : res.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors border border-slate-200 dark:border-slate-700 flex items-center">
+                            <span className="material-symbols-outlined text-lg">more_vert</span>
+                          </button>
+                          {activeMenu === res.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-1 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                              {res.status === 'aguardando retirada' && (
+                                <button onClick={() => { setProcessingPickupRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                  <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                  Concluir Entrega
+                                </button>
+                              )}
+                              {res.status === 'locação em uso' && (
+                                <button onClick={() => { setProcessingReturnRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                                  <span className="material-symbols-outlined text-lg">assignment_turned_in</span>
+                                  Concluir Locação
+                                </button>
+                              )}
+                              {(res.status === 'locação em uso' || res.status === 'locação concluída') && (
+                                <button onClick={() => { setViewingReportRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary dark:text-accent-sunshine font-bold hover:bg-primary/5 transition-colors">
+                                  <span className="material-symbols-outlined text-lg">analytics</span>
+                                  Relatório Vistoria
+                                </button>
+                              )}
+                              <button onClick={() => { setEditingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium">
+                                  <span className="material-symbols-outlined text-lg">edit</span>
+                                  Editar Reserva
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    let newObs = res.observations || '';
+                                    if (isPaid) {
+                                      newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
+                                    } else {
+                                      if (!newObs.includes('[CAUCAO_PAGO]')) {
+                                        newObs = `${newObs} [CAUCAO_PAGO]`.trim();
+                                      }
+                                    }
+                                    await onUpdateReservation(res.id, { observations: newObs });
+                                    toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
+                                    setActiveMenu(null);
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
+                                >
+                                  <span className="material-symbols-outlined text-lg">payments</span>
+                                  {isPaid ? 'Caução Pendente' : 'Confirmar Caução Pago'}
+                                </button>
+                                <button onClick={async () => { if (window.confirm('Tem certeza que deseja excluir esta reserva?')) { await onDeleteReservation(res.id); setActiveMenu(null); } }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                  <span className="material-symbols-outlined text-lg">delete</span>
+                                  Excluir Reserva
+                                </button>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button 
+                          onClick={() => setExpandedResId(isExpanded ? null : res.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors border border-slate-200 dark:border-slate-700 flex items-center"
+                        >
+                          <span className="material-symbols-outlined text-lg">
+                            {isExpanded ? 'expand_less' : 'expand_more'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded Detail view on mobile */}
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-4 text-xs">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Origem</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              res.origin === 'site'
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-955/20 dark:text-blue-400 border-blue-200'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800/30 dark:text-slate-450 border-slate-200'
+                            }`}>
+                              {res.origin === 'site' ? 'Site / Online' : 'Painel / Balcão'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Controle de Caução</span>
+                            <button
+                              onClick={async () => {
+                                let newObs = res.observations || '';
+                                if (isPaid) {
+                                  newObs = newObs.replace('[CAUCAO_PAGO]', '').trim();
+                                } else {
+                                  if (!newObs.includes('[CAUCAO_PAGO]')) {
+                                    newObs = `${newObs} [CAUCAO_PAGO]`.trim();
+                                  }
+                                }
+                                await onUpdateReservation(res.id, { observations: newObs });
+                                toast.success(isPaid ? 'Caução marcado como pendente!' : 'Caução marcado como pago!');
+                              }}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                                isPaid
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-955/20 dark:text-amber-400 border-amber-200 dark:border-amber-900/30'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[13px]">
+                                {isPaid ? 'check_circle' : 'pending'}
+                              </span>
+                              {isPaid ? 'Caução Pago' : 'Confirmar Pago'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Financial detail */}
+                        <div className="bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50 space-y-1.5">
+                          <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Detalhamento Financeiro</span>
+                          <div className="flex justify-between">
+                            <span>Diária da Poltrona:</span>
+                            <span className="font-semibold text-slate-800 dark:text-white">R$ {res.daily_rate?.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Período:</span>
+                            <span className="font-semibold text-slate-800 dark:text-white">{res.days} dias</span>
+                          </div>
+                          {res.insurance_value > 0 && (
+                            <div className="flex justify-between">
+                              <span>Seguro/Garantia:</span>
+                              <span className="font-semibold text-slate-800 dark:text-white">R$ {res.insurance_value.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {res.security_deposit > 0 && (
+                            <div className="flex justify-between">
+                              <span>Caução Requerido:</span>
+                              <span className="font-semibold text-slate-800 dark:text-white">R$ {res.security_deposit.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1"></div>
+                          <div className="flex justify-between font-bold text-primary dark:text-brand-teal text-sm">
+                            <span>Valor Total:</span>
+                            <span>R$ {res.total_value?.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        {/* Services & Obs */}
+                        <div className="space-y-2">
+                          {res.additional_services && (
+                            <div>
+                              <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Adicionais</span>
+                              <p className="font-semibold text-slate-700 dark:text-slate-300">{res.additional_services.split(',').map(s => s.trim()).join(', ')}</p>
+                            </div>
+                          )}
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Observações</span>
+                            <p className="text-slate-600 dark:text-slate-400 italic whitespace-pre-line bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800/40">
+                              {res.observations?.replace('[CAUCAO_PAGO]', '').trim() || 'Sem observações.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            </>
           )}
         </div>
       </div>
