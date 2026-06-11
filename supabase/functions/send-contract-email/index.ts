@@ -244,7 +244,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: senderEmail,
-        to: [clientEmail],
+        to: [clientEmail.toLowerCase()],
         subject: `Contrato e Voucher de Locação - ${clientName}`,
         html: emailHtml,
       }),

@@ -226,7 +226,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 const signatureLink = `${window.location.origin}/contrato/${reservation.id}/assinar`;
                 const { error: emailError } = await supabase.functions.invoke('send-contract-email', {
                     body: {
-                        clientEmail: client.email,
+                        clientEmail: client.email.toLowerCase(),
                         clientName: client.name,
                         signatureLink,
                         reservationDetails: {
