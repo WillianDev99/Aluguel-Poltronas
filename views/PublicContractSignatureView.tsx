@@ -288,44 +288,44 @@ const PublicContractSignatureView: React.FC = () => {
     const getRenderedContent = () => {
         if (!contract) return '';
         let html = contract.content;
-        const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+        const containerRegex = /<div\s+[^>]*id=["']client-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
         const divRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
         const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
 
-        const landlordContainerRegex = /<div\s+id="landlord-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+        const landlordContainerRegex = /<div\s+[^>]*id=["']landlord-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
         const locadoraRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locadora\s*<\/div>)/i;
 
         // Process client signature
         if (contract.status === 'assinado' && contract.signature_url) {
-            const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${contract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            const imgTag = `<img src="${contract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" />`;
             
             if (containerRegex.test(html)) {
-                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>`);
             } else if (divRegex.test(html)) {
-                html = html.replace(divRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                html = html.replace(divRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>`);
             } else if (locatarioRegex.test(html)) {
-                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>$2`);
+                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>$2`);
             }
         } else {
             // Pending, replace container content with empty spacer
             if (containerRegex.test(html)) {
-                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
             } else if (locatarioRegex.test(html)) {
-                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
+                html = html.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>$2`);
             }
         }
 
         // Process landlord signature
         if (landlordSigUrl) {
-            const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+            const landlordImgTag = `<img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" />`;
             if (landlordContainerRegex.test(html)) {
-                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
+                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>`);
             } else if (locadoraRegex.test(html)) {
-                html = html.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>$2`);
+                html = html.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>$2`);
             }
         } else {
             if (landlordContainerRegex.test(html)) {
-                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                html = html.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
             }
         }
 

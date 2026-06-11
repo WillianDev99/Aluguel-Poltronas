@@ -17,6 +17,7 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
     const [signedAt, setSignedAt] = useState<string | null>(null);
     const [signedInfo, setSignedInfo] = useState<{ name?: string, cpf?: string, ip?: string } | null>(null);
+    const [sendEmail, setSendEmail] = useState(!!client?.email);
     const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -52,45 +53,45 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     }
 
                     let dbContent = savedContract.content;
-                    const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+                    const containerRegex = /<div\s+[^>]*id=["']client-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
                     const oldDivRegex = /<div\s+style="height:\s*50px;?\s*">([\s\S]*?)<\/div>/i;
                     const locatarioRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locat[áa]rio\s*<\/div>)/i;
 
-                    const landlordContainerRegex = /<div\s+id="landlord-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+                    const landlordContainerRegex = /<div\s+[^>]*id=["']landlord-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
                     const locadoraRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locadora\s*<\/div>)/i;
 
                     // Process client signature
                     if (savedContract.signature_url) {
-                        const imgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${savedContract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const imgTag = `<img src="${savedContract.signature_url}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" />`;
                         
                         if (containerRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>`);
                         } else if (oldDivRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(oldDivRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>`);
+                            dbContent = dbContent.replace(oldDivRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>`);
                         } else if (dbContent.includes('{{CLIENT_SIGNATURE_PLACEHOLDER}}')) {
-                            dbContent = dbContent.replace('{{CLIENT_SIGNATURE_PLACEHOLDER}}', imgTag);
+                            dbContent = dbContent.replace('{{CLIENT_SIGNATURE_PLACEHOLDER}}', `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>`);
                         } else if (locatarioRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;">${imgTag}</div>$2`);
+                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${imgTag}</div>$2`);
                         }
                     } else {
                         if (containerRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                            dbContent = dbContent.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
                         } else if (locatarioRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
+                            dbContent = dbContent.replace(locatarioRegex, `$1<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>$2`);
                         }
                     }
 
                     // Process landlord signature
                     if (landlordSigUrl) {
-                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const landlordImgTag = `<img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" />`;
                         if (landlordContainerRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
+                            dbContent = dbContent.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>`);
                         } else if (locadoraRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>$2`);
+                            dbContent = dbContent.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>$2`);
                         }
                     } else {
                         if (landlordContainerRegex.test(dbContent)) {
-                            dbContent = dbContent.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                            dbContent = dbContent.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
                         }
                     }
 
@@ -106,21 +107,21 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     let filled = fillPlaceholders(baseTemplate);
 
                     // Inject landlord signature
-                    const landlordContainerRegex = /<div\s+id="landlord-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
+                    const landlordContainerRegex = /<div\s+[^>]*id=["']landlord-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
                     const locadoraRegex = /(<div\s+style="text-align:\s*center;\s*width:\s*45%;?"\s*>\s*)(<div\s+style="border-top:\s*1px\s+solid\s+black;[^>]*><\/div>\s*<div[^>]*>(?:(?!<\/div>\s*<div)[\s\S])*?<\/div>\s*<div[^>]*>\s*Locadora\s*<\/div>)/i;
 
                     if (landlordSigUrl) {
-                        const landlordImgTag = `<div style="text-align: center; margin-bottom: -15px;"><img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`;
+                        const landlordImgTag = `<img src="${landlordSigUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" />`;
                         if (landlordContainerRegex.test(filled)) {
-                            filled = filled.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>`);
+                            filled = filled.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>`);
                         } else if (locadoraRegex.test(filled)) {
-                            filled = filled.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px;">${landlordImgTag}</div>$2`);
+                            filled = filled.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;">${landlordImgTag}</div>$2`);
                         }
                     } else {
                         if (landlordContainerRegex.test(filled)) {
-                            filled = filled.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px;"></div>`);
+                            filled = filled.replace(landlordContainerRegex, `<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
                         } else if (locadoraRegex.test(filled)) {
-                            filled = filled.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px;"></div>$2`);
+                            filled = filled.replace(locadoraRegex, `$1<div id="landlord-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>$2`);
                         }
                     }
 
@@ -162,8 +163,8 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             '{{INSURANCE_VALUE}}': money(vehicle?.default_insurance_value || 0),
             '{{CURRENT_DATE}}': new Date().toLocaleDateString('pt-BR'),
             '{{CLIENT_SIGNATURE_PLACEHOLDER}}': signatureUrl 
-                ? `<div id="client-signature-container" style="text-align: center; min-height: 50px;"><div style="text-align: center; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div></div>`
-                : `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`
+                ? `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"><img src="${signatureUrl}" style="height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;" /></div>`
+                : `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`
         };
 
         let result = text;
@@ -220,7 +221,33 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 .from('rental_contracts')
                 .upsert({ rental_id: reservation.id, content, status: 'pendente' });
             if (error) throw error;
-            toast.success('Contrato salvo com sucesso!');
+
+            if (sendEmail && client?.email) {
+                const signatureLink = `${window.location.origin}/contrato/${reservation.id}/assinar`;
+                const { error: emailError } = await supabase.functions.invoke('send-contract-email', {
+                    body: {
+                        clientEmail: client.email,
+                        clientName: client.name,
+                        signatureLink,
+                        reservationDetails: {
+                            pickupDate: reservation.pickup_date ? new Date(reservation.pickup_date).toLocaleDateString('pt-BR') : '__/__/____',
+                            returnDate: reservation.return_date ? new Date(reservation.return_date).toLocaleDateString('pt-BR') : '__/__/____',
+                            vehicleModel: vehicle?.model || 'Poltrona Motorizada Premium - Sistema Lift',
+                            vehiclePlate: vehicle?.plate || 'PL-000',
+                            totalValue: reservation.total_value,
+                            securityDeposit: reservation.security_deposit
+                        }
+                    }
+                });
+
+                if (emailError) {
+                    toast.error('Contrato salvo, mas erro ao enviar e-mail: ' + emailError.message);
+                } else {
+                    toast.success('Contrato salvo e e-mail enviado ao cliente!');
+                }
+            } else {
+                toast.success('Contrato salvo com sucesso!');
+            }
         } catch (err: any) {
             toast.error('Erro ao salvar: ' + err.message);
         } finally {
@@ -236,6 +263,17 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
 
         setIsSaving(true);
         try {
+            let updatedContent = '';
+            if (editorRef.current) {
+                let html = editorRef.current.innerHTML;
+                const containerRegex = /<div\s+[^>]*id=["']client-signature-container["'][^>]*>(?:<div[^>]*>[\s\S]*?<\/div>|[\s\S])*?<\/div>(?:\s*<\/div>)?/i;
+                if (containerRegex.test(html)) {
+                    html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px; margin-bottom: -15px;"></div>`);
+                }
+                editorRef.current.innerHTML = html;
+                updatedContent = html;
+            }
+
             const { error } = await supabase
                 .from('rental_contracts')
                 .update({
@@ -245,7 +283,8 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                     client_ip: null,
                     client_user_agent: null,
                     client_name: null,
-                    client_cpf: null
+                    client_cpf: null,
+                    ...(updatedContent ? { content: updatedContent } : {})
                 })
                 .eq('rental_id', reservation.id);
 
@@ -256,16 +295,6 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             setSignatureUrl(null);
             setSignedAt(null);
             setSignedInfo(null);
-
-            // Clean signature container in editor DOM
-            if (editorRef.current) {
-                let html = editorRef.current.innerHTML;
-                const containerRegex = /<div\s+id="client-signature-container"[^>]*>([\s\S]*?)<\/div>/i;
-                if (containerRegex.test(html)) {
-                    html = html.replace(containerRegex, `<div id="client-signature-container" style="text-align: center; min-height: 50px;"></div>`);
-                }
-                editorRef.current.innerHTML = html;
-            }
         } catch (err: any) {
             toast.error('Erro ao invalidar assinatura: ' + err.message);
         } finally {
@@ -344,6 +373,23 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                             <span className="material-symbols-outlined text-lg">draw</span>
                             Solicitar Nova Assinatura
                         </button>
+                    )}
+                    {!isSigned && (
+                        <div className="flex items-center gap-2 mr-2">
+                            {client?.email ? (
+                                <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-450 cursor-pointer select-none">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={sendEmail} 
+                                        onChange={(e) => setSendEmail(e.target.checked)}
+                                        className="rounded border-slate-300 text-primary focus:ring-primary size-4"
+                                    />
+                                    Enviar contrato/voucher por e-mail
+                                </label>
+                            ) : (
+                                <span className="text-[10px] text-rose-500 font-bold uppercase">Sem e-mail cadastrado</span>
+                            )}
+                        </div>
                     )}
                     <button 
                         onClick={handleSave} 
