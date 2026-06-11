@@ -106,8 +106,9 @@ export interface Reservation {
 export interface ShippingRate {
   id: string;
   region_name: string;
-  cep_start: string;
-  cep_end: string;
+  cep_start: string | null;
+  cep_end: string | null;
+  neighborhood: string | null;
   price: number;
   created_at?: string;
 }

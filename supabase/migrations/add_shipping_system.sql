@@ -2,8 +2,9 @@
 CREATE TABLE IF NOT EXISTS public.shipping_rates (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   region_name TEXT NOT NULL,
-  cep_start VARCHAR(8) NOT NULL,
-  cep_end VARCHAR(8) NOT NULL,
+  cep_start VARCHAR(8),
+  cep_end VARCHAR(8),
+  neighborhood VARCHAR(100),
   price NUMERIC NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

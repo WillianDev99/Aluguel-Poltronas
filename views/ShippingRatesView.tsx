@@ -12,8 +12,10 @@ const ShippingRatesView: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRate, setEditingRate] = useState<ShippingRate | null>(null);
     const [regionName, setRegionName] = useState('');
+    const [ruleType, setRuleType] = useState<'range' | 'specific' | 'neighborhood'>('range');
     const [cepStart, setCepStart] = useState('');
     const [cepEnd, setCepEnd] = useState('');
+    const [neighborhood, setNeighborhood] = useState('');
     const [price, setPrice] = useState('');
 
     useEffect(() => {
@@ -38,7 +40,8 @@ const ShippingRatesView: React.FC = () => {
         }
     };
 
-    const formatCEP = (val: string) => {
+    const formatCEP = (val: string | null) => {
+        if (!val) return '';
         return val.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').substring(0, 9);
     };
 
@@ -57,8 +60,10 @@ const ShippingRatesView: React.FC = () => {
     const openAddModal = () => {
         setEditingRate(null);
         setRegionName('');
+        setRuleType('range');
         setCepStart('');
         setCepEnd('');
+        setNeighborhood('');
         setPrice('');
         setIsModalOpen(true);
     };
@@ -66,31 +71,64 @@ const ShippingRatesView: React.FC = () => {
     const openEditModal = (rate: ShippingRate) => {
         setEditingRate(rate);
         setRegionName(rate.region_name);
-        setCepStart(formatCEP(rate.cep_start));
-        setCepEnd(formatCEP(rate.cep_end));
         setPrice(rate.price.toString());
+        
+        if (rate.neighborhood) {
+            setRuleType('neighborhood');
+            setNeighborhood(rate.neighborhood);
+            setCepStart('');
+            setCepEnd('');
+        } else if (rate.cep_start === rate.cep_end && rate.cep_start) {
+            setRuleType('specific');
+            setCepStart(formatCEP(rate.cep_start));
+            setCepEnd('');
+            setNeighborhood('');
+        } else {
+            setRuleType('range');
+            setCepStart(formatCEP(rate.cep_start));
+            setCepEnd(formatCEP(rate.cep_end));
+            setNeighborhood('');
+        }
         setIsModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        const cleanStart = cleanCEP(cepStart);
-        const cleanEnd = cleanCEP(cepEnd);
-
         if (!regionName.trim()) {
             toast.error('Informe o nome da região.');
             return;
         }
 
-        if (cleanStart.length !== 8 || cleanEnd.length !== 8) {
-            toast.error('Os CEPs inicial e final devem conter 8 dígitos.');
-            return;
-        }
+        let cleanStart: string | null = null;
+        let cleanEnd: string | null = null;
+        let finalNeighborhood: string | null = null;
 
-        if (cleanStart > cleanEnd) {
-            toast.error('O CEP inicial não pode ser maior que o CEP final.');
-            return;
+        if (ruleType === 'range') {
+            cleanStart = cleanCEP(cepStart);
+            cleanEnd = cleanCEP(cepEnd);
+            if (cleanStart.length !== 8 || cleanEnd.length !== 8) {
+                toast.error('Os CEPs inicial e final devem conter 8 dígitos.');
+                return;
+            }
+            if (cleanStart > cleanEnd) {
+                toast.error('O CEP inicial não pode ser maior que o CEP final.');
+                return;
+            }
+        } else if (ruleType === 'specific') {
+            const clean = cleanCEP(cepStart);
+            if (clean.length !== 8) {
+                toast.error('O CEP deve conter 8 dígitos.');
+                return;
+            }
+            cleanStart = clean;
+            cleanEnd = clean;
+        } else if (ruleType === 'neighborhood') {
+            if (!neighborhood.trim()) {
+                toast.error('Informe o nome do bairro.');
+                return;
+            }
+            finalNeighborhood = neighborhood.trim();
         }
 
         const numericPrice = parseFloat(price);
@@ -105,6 +143,7 @@ const ShippingRatesView: React.FC = () => {
                 region_name: regionName.trim(),
                 cep_start: cleanStart,
                 cep_end: cleanEnd,
+                neighborhood: finalNeighborhood,
                 price: numericPrice
             };
 
@@ -134,14 +173,14 @@ const ShippingRatesView: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Tem certeza que deseja excluir esta faixa de frete?')) return;
+        if (!window.confirm('Tem certeza que deseja excluir esta faixa/regra de frete?')) return;
         try {
             const { error } = await supabase
                 .from('shipping_rates')
                 .delete()
                 .eq('id', id);
             if (error) throw error;
-            toast.success('Faixa de frete excluída!');
+            toast.success('Regra de frete excluída!');
             fetchRates();
         } catch (err: any) {
             console.error('Erro ao excluir:', err);
@@ -154,14 +193,14 @@ const ShippingRatesView: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-display font-black text-slate-800 dark:text-white uppercase tracking-tight">Tabela de Fretes</h1>
-                    <p className="text-xs text-slate-500 font-bold uppercase mt-1">Configure o valor da entrega por faixa de CEP</p>
+                    <p className="text-xs text-slate-500 font-bold uppercase mt-1">Configure o valor da entrega por Bairro, CEP específico ou faixas de CEP</p>
                 </div>
                 <button
                     onClick={openAddModal}
                     className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-xl font-bold text-sm transition-all shadow-md self-start sm:self-auto uppercase"
                 >
                     <span className="material-symbols-outlined text-lg">add_location</span>
-                    Nova Região de Frete
+                    Nova Regra de Frete
                 </button>
             </div>
 
@@ -174,7 +213,7 @@ const ShippingRatesView: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center max-w-md mx-auto space-y-4">
                     <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-5xl">local_shipping</span>
                     <h3 className="font-display font-bold text-slate-700 dark:text-slate-350 text-base uppercase tracking-wider">Nenhum frete cadastrado</h3>
-                    <p className="text-xs text-slate-400">Cadastre as faixas de CEP e valores de entrega para ativar o cálculo automático nas reservas.</p>
+                    <p className="text-xs text-slate-400">Cadastre as regras de bairros, CEPs e valores de entrega para ativar o cálculo automático nas reservas.</p>
                 </div>
             ) : (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
@@ -183,8 +222,8 @@ const ShippingRatesView: React.FC = () => {
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                                     <th className="px-6 py-4">Região / Zona</th>
-                                    <th className="px-6 py-4">CEP Inicial</th>
-                                    <th className="px-6 py-4">CEP Final</th>
+                                    <th className="px-6 py-4">Regra / Tipo</th>
+                                    <th className="px-6 py-4">Identificador</th>
                                     <th className="px-6 py-4">Valor do Frete</th>
                                     <th className="px-6 py-4 text-right">Ações</th>
                                 </tr>
@@ -192,6 +231,22 @@ const ShippingRatesView: React.FC = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40 text-xs font-semibold">
                                 {rates.map((rate, idx) => {
                                     const isOdd = idx % 2 !== 0;
+                                    
+                                    // Determine rule description
+                                    let ruleTypeLabel = '';
+                                    let ruleValue = '';
+                                    
+                                    if (rate.neighborhood) {
+                                        ruleTypeLabel = 'Por Bairro';
+                                        ruleValue = rate.neighborhood;
+                                    } else if (rate.cep_start === rate.cep_end && rate.cep_start) {
+                                        ruleTypeLabel = 'CEP Único';
+                                        ruleValue = formatCEP(rate.cep_start);
+                                    } else {
+                                        ruleTypeLabel = 'Faixa de CEP';
+                                        ruleValue = `${formatCEP(rate.cep_start)} a ${formatCEP(rate.cep_end)}`;
+                                    }
+
                                     return (
                                         <tr 
                                             key={rate.id}
@@ -202,8 +257,18 @@ const ShippingRatesView: React.FC = () => {
                                             } hover:bg-slate-100/50 dark:hover:bg-slate-800/30 transition-colors`}
                                         >
                                             <td className="px-6 py-4 font-bold text-slate-850 dark:text-slate-200">{rate.region_name}</td>
-                                            <td className="px-6 py-4 font-mono font-bold text-slate-500 dark:text-slate-400">{formatCEP(rate.cep_start)}</td>
-                                            <td className="px-6 py-4 font-mono font-bold text-slate-500 dark:text-slate-400">{formatCEP(rate.cep_end)}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                                                    rate.neighborhood 
+                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
+                                                        : rate.cep_start === rate.cep_end
+                                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+                                                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                }`}>
+                                                    {ruleTypeLabel}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-mono font-bold text-slate-600 dark:text-slate-350">{ruleValue}</td>
                                             <td className="px-6 py-4 font-bold text-emerald-600 dark:text-emerald-500">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(rate.price)}
                                             </td>
@@ -238,7 +303,7 @@ const ShippingRatesView: React.FC = () => {
                     <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <header className="px-6 py-4 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                             <h3 className="font-display font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                                {editingRate ? 'Editar Região' : 'Nova Região de Frete'}
+                                {editingRate ? 'Editar Regra' : 'Nova Regra de Frete'}
                             </h3>
                             <button 
                                 onClick={() => setIsModalOpen(false)} 
@@ -260,30 +325,99 @@ const ShippingRatesView: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">CEP Inicial</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Tipo de Regra</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRuleType('range')}
+                                        className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                                            ruleType === 'range' 
+                                                ? 'bg-primary border-primary text-white shadow-sm' 
+                                                : 'bg-slate-50 dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                                        }`}
+                                    >
+                                        Faixa de CEP
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRuleType('specific')}
+                                        className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                                            ruleType === 'specific' 
+                                                ? 'bg-primary border-primary text-white shadow-sm' 
+                                                : 'bg-slate-50 dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                                        }`}
+                                    >
+                                        CEP Único
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRuleType('neighborhood')}
+                                        className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                                            ruleType === 'neighborhood' 
+                                                ? 'bg-primary border-primary text-white shadow-sm' 
+                                                : 'bg-slate-50 dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                                        }`}
+                                    >
+                                        Bairro
+                                    </button>
+                                </div>
+                            </div>
+
+                            {ruleType === 'range' && (
+                                <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-200">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">CEP Inicial</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                                            value={cepStart}
+                                            onChange={handleCepStartChange}
+                                            placeholder="00000-000"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">CEP Final</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                                            value={cepEnd}
+                                            onChange={handleCepEndChange}
+                                            placeholder="00000-000"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {ruleType === 'specific' && (
+                                <div className="space-y-1 animate-in fade-in duration-200">
+                                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">CEP Específico</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                                        className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
                                         value={cepStart}
                                         onChange={handleCepStartChange}
                                         placeholder="00000-000"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">CEP Final</label>
+                            )}
+
+                            {ruleType === 'neighborhood' && (
+                                <div className="space-y-1 animate-in fade-in duration-200">
+                                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Nome do Bairro</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
-                                        value={cepEnd}
-                                        onChange={handleCepEndChange}
-                                        placeholder="00000-000"
+                                        className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                                        value={neighborhood}
+                                        onChange={e => setNeighborhood(e.target.value)}
+                                        placeholder="Ex: Aldeota"
                                     />
                                 </div>
-                            </div>
+                            )}
 
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Valor do Frete (R$)</label>
@@ -291,7 +425,7 @@ const ShippingRatesView: React.FC = () => {
                                     type="number"
                                     step="0.01"
                                     required
-                                    className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                                    className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
                                     value={price}
                                     onChange={e => setPrice(e.target.value)}
                                     placeholder="0,00"
@@ -313,7 +447,7 @@ const ShippingRatesView: React.FC = () => {
                                     className="px-5 py-2 bg-primary hover:brightness-110 text-white font-bold rounded-xl text-xs uppercase flex items-center gap-1 shadow-md disabled:opacity-50"
                                 >
                                     {isSubmitting && <span className="animate-spin material-symbols-outlined text-xs">progress_activity</span>}
-                                    Salvar Região
+                                    Salvar Regra
                                 </button>
                             </footer>
                         </form>

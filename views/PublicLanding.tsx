@@ -354,21 +354,45 @@ const PublicLanding: React.FC = () => {
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  const lookupShippingRate = async (cepStr: string) => {
+  const lookupShippingRate = async (cepStr: string, neighborhoodName?: string) => {
     const cleanCep = cepStr.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: rates, error } = await supabase
         .from('shipping_rates')
-        .select('*')
-        .lte('cep_start', cleanCep)
-        .gte('cep_end', cleanCep);
+        .select('*');
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const rate = data[0];
+      const cleanString = (str: string) => {
+        return str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim();
+      };
+
+      // Find matching rate
+      let rate = null;
+      if (rates && rates.length > 0) {
+        // 1. CEP range/specific match
+        rate = rates.find(r => {
+          if (!r.cep_start || !r.cep_end) return false;
+          return cleanCep >= r.cep_start && cleanCep <= r.cep_end;
+        });
+
+        // 2. Neighborhood match if no CEP match
+        if (!rate && neighborhoodName) {
+          const cleanedSearch = cleanString(neighborhoodName);
+          rate = rates.find(r => {
+            if (!r.neighborhood) return false;
+            return cleanString(r.neighborhood) === cleanedSearch;
+          });
+        }
+      }
+
+      if (rate) {
         setBookingForm(prev => ({
           ...prev,
           shippingValue: rate.price,
@@ -403,16 +427,55 @@ const PublicLanding: React.FC = () => {
     setCalcResult(null);
 
     try {
-      const { data, error } = await supabase
+      // 1. Fetch from ViaCEP to validate CEP and get neighborhood
+      const viacepRes = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const viacepData = await viacepRes.json();
+      
+      if (viacepData.erro) {
+        setCalcResult({
+          success: false,
+          message: 'CEP não localizado na base dos Correios.'
+        });
+        return;
+      }
+
+      const neighborhoodName = viacepData.bairro || '';
+
+      // 2. Fetch all shipping rates from Supabase
+      const { data: rates, error } = await supabase
         .from('shipping_rates')
-        .select('*')
-        .lte('cep_start', cleanCep)
-        .gte('cep_end', cleanCep);
+        .select('*');
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const rate = data[0];
+      const cleanString = (str: string) => {
+        return str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim();
+      };
+
+      // 3. Find matching rate
+      let rate = null;
+      if (rates && rates.length > 0) {
+        // 1. CEP match
+        rate = rates.find(r => {
+          if (!r.cep_start || !r.cep_end) return false;
+          return cleanCep >= r.cep_start && cleanCep <= r.cep_end;
+        });
+
+        // 2. Neighborhood match
+        if (!rate && neighborhoodName) {
+          const cleanedSearch = cleanString(neighborhoodName);
+          rate = rates.find(r => {
+            if (!r.neighborhood) return false;
+            return cleanString(r.neighborhood) === cleanedSearch;
+          });
+        }
+      }
+
+      if (rate) {
         setCalcResult({
           success: true,
           region: rate.region_name,
@@ -421,7 +484,7 @@ const PublicLanding: React.FC = () => {
       } else {
         setCalcResult({
           success: false,
-          message: 'CEP não tabelado para entrega padrão. O frete será verificado manualmente e combinado pelo nosso atendimento de WhatsApp após a reserva.'
+          message: `CEP não tabelado para entrega padrão (Bairro localizado: ${neighborhoodName || 'Desconhecido'}). O frete será verificado manualmente e combinado pelo nosso atendimento de WhatsApp após a reserva.`
         });
       }
     } catch (err: any) {
@@ -633,7 +696,7 @@ const PublicLanding: React.FC = () => {
             state: data.uf || ''
           }));
           toast.success('Endereço autocompletado com sucesso!');
-          await lookupShippingRate(cleanCep);
+          await lookupShippingRate(cleanCep, data.bairro);
         } else {
           toast.error('CEP não localizado.');
         }
@@ -677,7 +740,7 @@ const PublicLanding: React.FC = () => {
             selfieBase64: client.selfie_url || ''
           }));
           if (client.cep) {
-            await lookupShippingRate(client.cep);
+            await lookupShippingRate(client.cep, client.neighborhood);
           }
         }
       } catch (err) {
