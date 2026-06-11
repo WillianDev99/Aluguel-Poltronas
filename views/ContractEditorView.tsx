@@ -241,7 +241,20 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
                 });
 
                 if (emailError) {
-                    toast.error('Contrato salvo, mas erro ao enviar e-mail: ' + emailError.message);
+                    let errMsg = emailError.message;
+                    try {
+                        if ('context' in emailError && typeof (emailError as any).context.json === 'function') {
+                            const errorBody = await (emailError as any).context.json();
+                            if (errorBody && errorBody.error) {
+                                errMsg = errorBody.error;
+                            } else if (errorBody && errorBody.message) {
+                                errMsg = errorBody.message;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Erro ao ler corpo do erro:', e);
+                    }
+                    toast.error('Contrato salvo, mas erro ao enviar e-mail: ' + errMsg);
                 } else {
                     toast.success('Contrato salvo e e-mail enviado ao cliente!');
                 }
