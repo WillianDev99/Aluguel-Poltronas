@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Vehicle } from '../types';
-import { Github, Shield, Award, ClipboardCheck, Sparkles, X, Printer, Send, Info, Facebook, Instagram } from 'lucide-react';
+import { Github, Shield, Award, ClipboardCheck, Sparkles, X, Download, Send, Info, Facebook, Instagram } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Calendar from '../components/Calendar';
 
@@ -549,9 +549,39 @@ const PublicLanding: React.FC = () => {
   }, [selectedPlanId, bookingForm.pickupDate]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [createdReservation, setCreatedReservation] = useState<any | null>(null);
   const [createdReservations, setCreatedReservations] = useState<any[]>([]);
   const [allReservations, setAllReservations] = useState<any[]>([]);
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('public-voucher-content');
+    if (!element || !createdReservation) return;
+
+    setIsGeneratingPdf(true);
+    const loadingToast = toast.loading('Gerando PDF do voucher...');
+
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      const opt = {
+        margin: 10,
+        filename: `Voucher-PL-${createdReservation.id.substring(0, 8).toUpperCase()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      toast.success('Voucher baixado com sucesso!', { id: loadingToast });
+    } catch (err) {
+      console.error('Erro ao gerar PDF do voucher:', err);
+      toast.error('Erro ao gerar PDF.', { id: loadingToast });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   // Availability calendar states
   const [occupiedRanges, setOccupiedRanges] = useState<{ start: Date; end: Date }[]>([]);
@@ -2430,7 +2460,7 @@ const PublicLanding: React.FC = () => {
                     return (
                       <>
                         <div className="w-full overflow-x-auto p-1.5 md:p-0 flex justify-start md:justify-center">
-                          <div className="print-area w-full min-w-0 sm:min-w-[580px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden text-left max-w-2xl mx-auto">
+                          <div id="public-voucher-content" className="print-area w-full min-w-0 sm:min-w-[580px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden text-left max-w-2xl mx-auto">
                             <div className="p-6 bg-slate-50 border-b border-slate-200">
                               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex items-center gap-2">
@@ -2538,6 +2568,27 @@ const PublicLanding: React.FC = () => {
                                           : 'Grátis'}
                                     </p>
                                   </div>
+                                  {bookingForm.selectedServices.includes('higienizacao') && (
+                                    <div>
+                                      <p className="text-[9px] font-bold text-slate-400 uppercase">Taxa de Higienização</p>
+                                      <p className="font-bold text-slate-800">
+                                        R$ {((selectedVehicle?.default_insurance_value || 50) * bookingForm.quantity).toFixed(2)}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {bookingForm.selectedServices.filter(s => s !== 'higienizacao').length > 0 && (
+                                    <div className="sm:col-span-2">
+                                      <p className="text-[9px] font-bold text-slate-400 uppercase">Outros Adicionais</p>
+                                      <p className="font-bold text-slate-800">
+                                        {bookingForm.selectedServices
+                                          .filter(s => s !== 'higienizacao')
+                                          .map(srvId => {
+                                            const srv = ADDITIONAL_SERVICES.find(s => s.id === srvId);
+                                            return srv ? `${srv.name} (R$ ${(srv.price * bookingForm.quantity).toFixed(2)})` : srvId;
+                                          }).join(', ')}
+                                      </p>
+                                    </div>
+                                  )}
                                   <div>
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Valor Total Estimado</p>
                                     <p className="font-black text-emerald-600 text-sm">
@@ -2589,11 +2640,12 @@ const PublicLanding: React.FC = () => {
                           </button>
                           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <button
-                              onClick={() => window.print()}
-                              className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                              onClick={handleDownloadPDF}
+                              disabled={isGeneratingPdf}
+                              className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
                             >
-                              <Printer size={14} />
-                              Imprimir Voucher
+                              <Download size={14} />
+                              {isGeneratingPdf ? 'Gerando PDF...' : 'Baixar PDF Completo'}
                             </button>
                             <button
                               onClick={() => {

@@ -134,7 +134,15 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
     return <img src={url} crossOrigin="anonymous" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />;
   };
 
+  const hasHigienizacao = reservation.additional_services?.toLowerCase().includes('higienizacao') || 
+                          reservation.additional_services?.toLowerCase().includes('higienização');
+  
+  const dailyRate = reservation.daily_rate || 15;
+  const days = reservation.days || 1;
+  const totalDiarias = dailyRate * days;
+  const shippingVal = reservation.shipping_value || 0;
   const totalReserva = reservation.total_value;
+  const totalServices = Math.max(0, totalReserva - totalDiarias - shippingVal);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 overflow-y-auto no-print">
@@ -149,10 +157,6 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
             <button onClick={handleDownloadPDF} disabled={isGenerating} className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50">
               {isGenerating ? <span className="animate-spin material-symbols-outlined text-lg">progress_activity</span> : <span className="material-symbols-outlined text-lg">download</span>}
               PDF Completo
-            </button>
-            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-lg">print</span>
-              Imprimir
             </button>
             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
               <span className="material-symbols-outlined">close</span>
@@ -245,30 +249,46 @@ const VoucherModal: React.FC<VoucherModalProps> = ({ reservation, client, vehicl
                     <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-0.5">Caução</p>
                     <p className="text-sm font-black text-amber-700">{money(reservation.security_deposit)}</p>
                   </div>
-                  <div className="bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-0.5">Taxa de Higienização</p>
-                    <p className="text-sm font-black text-rose-700">{money(vehicle?.default_insurance_value || 0)}</p>
+                  <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
+                    <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-0.5">Valor do Frete</p>
+                    <p className="text-sm font-black text-blue-700">
+                      {reservation.shipping_status === 'a_combinar' 
+                        ? 'A combinar' 
+                        : money(shippingVal)}
+                    </p>
                   </div>
+                  {hasHigienizacao && (
+                    <div className="bg-rose-50 p-2 rounded-lg border border-rose-200">
+                      <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-0.5">Taxa de Higienização</p>
+                      <p className="text-sm font-black text-rose-700">{money(vehicle?.default_insurance_value || 50)}</p>
+                    </div>
+                  )}
                   <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                     <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Garantia Hospitalar</p>
                     <p className="text-sm font-black text-emerald-700 uppercase">Incluso</p>
                   </div>
-                  <div className="col-span-3 bg-[#1b4e52] p-5 rounded-2xl shadow-lg flex items-center justify-center gap-10 mt-2">
-                    <div className="text-center">
+                  <div className="col-span-2 md:col-span-4 bg-[#1b4e52] p-5 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-4 md:gap-10 mt-2">
+                    <div className="text-center md:text-left">
                       <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-0">Total da Locação</p>
-                      <p className="text-[9px] text-white/50 leading-none">(Diárias totais + adicionais)</p>
+                      <p className="text-[9px] text-white/60 leading-normal mt-0.5">
+                        Diárias: {money(totalDiarias)} 
+                        {shippingVal > 0 && ` | Frete: ${money(shippingVal)}`}
+                        {totalServices > 0 && ` | Adicionais: ${money(totalServices)}`}
+                      </p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-black text-white tracking-tight leading-none">{money(totalReserva)}</p>
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 px-4 p-3 bg-rose-50 border border-rose-100 rounded-xl">
-                  <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Nota Importante</p>
-                  <p className="text-[10px] font-bold text-rose-800 leading-tight">
-                    A Taxa de Higienização de ({money(vehicle?.default_insurance_value || 0)}) cobre os custos operacionais de esterilização e sanitização do produto para entrega segura, garantindo padrão hospitalar para o paciente.
-                  </p>
-                </div>
+                {hasHigienizacao && (
+                  <div className="mt-4 px-4 p-3 bg-rose-50 border border-rose-100 rounded-xl">
+                    <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Nota Importante</p>
+                    <p className="text-[10px] font-bold text-rose-800 leading-tight">
+                      A Taxa de Higienização de ({money(vehicle?.default_insurance_value || 50)}) cobre os custos operacionais de esterilização e sanitização do produto para entrega segura, garantindo padrão hospitalar para o paciente.
+                    </p>
+                  </div>
+                )}
               </section>
             </div>
 
