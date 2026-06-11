@@ -344,6 +344,94 @@ const PublicLanding: React.FC = () => {
   const [selectedPlanId, setSelectedPlanId] = useState<'essencial' | 'plus' | 'premium' | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Shipping Calculator State
+  const [calcCep, setCalcCep] = useState('');
+  const [calcResult, setCalcResult] = useState<{
+    success: boolean;
+    region?: string;
+    price?: number;
+    message?: string;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const lookupShippingRate = async (cepStr: string) => {
+    const cleanCep = cepStr.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('shipping_rates')
+        .select('*')
+        .lte('cep_start', cleanCep)
+        .gte('cep_end', cleanCep);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const rate = data[0];
+        setBookingForm(prev => ({
+          ...prev,
+          shippingValue: rate.price,
+          shippingStatus: 'definido',
+          shippingRegionName: rate.region_name
+        }));
+        return { price: rate.price, status: 'definido' as const, region: rate.region_name };
+      } else {
+        setBookingForm(prev => ({
+          ...prev,
+          shippingValue: 0,
+          shippingStatus: 'a_combinar',
+          shippingRegionName: ''
+        }));
+        return { price: 0, status: 'a_combinar' as const, region: '' };
+      }
+    } catch (err) {
+      console.error('Erro ao consultar taxa de frete:', err);
+      return { price: 0, status: 'a_combinar' as const, region: '' };
+    }
+  };
+
+  const handleCalcShipping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCep = calcCep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) {
+      toast.error('Informe um CEP com 8 dígitos.');
+      return;
+    }
+
+    setIsCalculating(true);
+    setCalcResult(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('shipping_rates')
+        .select('*')
+        .lte('cep_start', cleanCep)
+        .gte('cep_end', cleanCep);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const rate = data[0];
+        setCalcResult({
+          success: true,
+          region: rate.region_name,
+          price: rate.price
+        });
+      } else {
+        setCalcResult({
+          success: false,
+          message: 'CEP não tabelado para entrega padrão. O frete será verificado manualmente e combinado pelo nosso atendimento de WhatsApp após a reserva.'
+        });
+      }
+    } catch (err: any) {
+      console.error('Erro ao calcular frete:', err);
+      toast.error('Erro ao pesquisar frete.');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
   // Modal states
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
@@ -375,6 +463,11 @@ const PublicLanding: React.FC = () => {
     docBase64: '',
     addressProofBase64: '',
     selfieBase64: '',
+
+    // Shipping Info
+    shippingValue: 0,
+    shippingStatus: 'definido' as 'definido' | 'a_combinar',
+    shippingRegionName: '',
   });
 
   // Auto-set return date when plan is selected and pickup date changes
@@ -540,6 +633,7 @@ const PublicLanding: React.FC = () => {
             state: data.uf || ''
           }));
           toast.success('Endereço autocompletado com sucesso!');
+          await lookupShippingRate(cleanCep);
         } else {
           toast.error('CEP não localizado.');
         }
@@ -582,6 +676,9 @@ const PublicLanding: React.FC = () => {
             addressProofBase64: client.address_proof_url || '',
             selfieBase64: client.selfie_url || ''
           }));
+          if (client.cep) {
+            await lookupShippingRate(client.cep);
+          }
         }
       } catch (err) {
         console.error("Erro no lookup do CPF:", err);
@@ -678,6 +775,9 @@ const PublicLanding: React.FC = () => {
     } else {
       subtotal = ((days * dailyRate) + servicesTotal) * (bookingForm.quantity || 1);
     }
+    
+    // Add shipping value
+    subtotal += (bookingForm.shippingValue || 0);
     
     return { days, subtotal, dailyRate, servicesTotal, planPrice };
   };
@@ -849,6 +949,9 @@ const PublicLanding: React.FC = () => {
       const valuePerChair = selectedPlanId 
         ? (totals.planPrice + totals.servicesTotal) 
         : ((totals.days * totals.dailyRate) + totals.servicesTotal);
+      
+      const shippingPerChair = (bookingForm.shippingValue || 0) / (bookingForm.quantity || 1);
+
       const reservationPayloads = selectedIds.map((vId, idx) => ({
         client_id: clientId,
         vehicle_id: vId,
@@ -856,7 +959,9 @@ const PublicLanding: React.FC = () => {
         return_date: new Date(bookingForm.returnDate).toISOString(),
         daily_rate: selectedPlanId ? (totals.planPrice / totals.days) : totals.dailyRate,
         days: totals.days,
-        total_value: valuePerChair,
+        total_value: valuePerChair + shippingPerChair,
+        shipping_value: shippingPerChair,
+        shipping_status: bookingForm.shippingStatus,
         security_deposit: selectedVehicle?.default_security_deposit || 0,
         insurance_value: 0,
         insurance_details: INSURANCE_COVERAGES.map(name => ({ name, value: 0, selected: true })),
@@ -1179,6 +1284,71 @@ const PublicLanding: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+
+          {/* Calculador de Frete (Estilo E-commerce) */}
+          <div className="max-w-xl mx-auto mt-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl text-left">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none transition-transform group-hover:scale-125"></div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-primary/10 text-primary dark:bg-slate-800 dark:text-brand-teal rounded-2xl">
+                <span className="material-symbols-outlined text-xl font-bold">local_shipping</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Simule o Frete de Entrega</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Consulte os valores para Fortaleza e região</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCalcShipping} className="flex gap-3">
+              <input
+                type="text"
+                placeholder="00000-000"
+                className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-750 rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-primary/20 dark:text-white"
+                value={calcCep}
+                onChange={e => setCalcCep(maskCEP(e.target.value))}
+              />
+              <button
+                type="submit"
+                disabled={isCalculating}
+                className="px-6 h-12 bg-primary hover:brightness-110 text-white rounded-xl font-bold text-xs uppercase transition-all tracking-wider shadow-md disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isCalculating ? (
+                  <span className="animate-spin material-symbols-outlined text-sm">progress_activity</span>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-base">search</span>
+                    <span>Calcular</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {calcResult && (
+              <div className="mt-6 animate-in fade-in slide-in-from-top-3 duration-300">
+                {calcResult.success ? (
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250/20 rounded-2xl flex items-start gap-3">
+                    <span className="material-symbols-outlined text-emerald-500 font-bold mt-0.5">check_circle</span>
+                    <div className="text-xs">
+                      <p className="font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider text-[9px]">Região Atendida: {calcResult.region}</p>
+                      <p className="font-black text-slate-800 dark:text-slate-250 mt-1">
+                        Valor da entrega: R$ {calcResult.price?.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-emerald-600/70 font-semibold mt-0.5">O frete será calculado automaticamente na finalização da reserva.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250/20 rounded-2xl flex items-start gap-3">
+                    <span className="material-symbols-outlined text-amber-550 font-bold mt-0.5">help</span>
+                    <div className="text-xs text-slate-750 dark:text-slate-350">
+                      <p className="font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider text-[9px]">CEP não tabelado</p>
+                      <p className="font-semibold leading-relaxed mt-1">
+                        {calcResult.message}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -2040,6 +2210,21 @@ const PublicLanding: React.FC = () => {
                           value={bookingForm.cep}
                           onChange={handleCepChange}
                         />
+                        {bookingForm.cep.replace(/\D/g, '').length === 8 && (
+                          <div className="text-[10px] font-bold mt-1 uppercase">
+                            {bookingForm.shippingStatus === 'a_combinar' ? (
+                              <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">help</span>
+                                Frete a combinar
+                              </span>
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">local_shipping</span>
+                                Frete: R$ {bookingForm.shippingValue.toFixed(2)} ({bookingForm.shippingRegionName})
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {/* Street */}
                       <div className="md:col-span-3 space-y-1">
@@ -2281,6 +2466,16 @@ const PublicLanding: React.FC = () => {
                                     </p>
                                   </div>
                                   <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Frete / Entrega</p>
+                                    <p className="font-bold text-slate-800">
+                                      {createdReservation.shipping_status === 'a_combinar' 
+                                        ? 'A combinar (A consultar)' 
+                                        : createdReservations.reduce((sum, r) => sum + (r.shipping_value || 0), 0) > 0 
+                                          ? `R$ ${createdReservations.reduce((sum, r) => sum + (r.shipping_value || 0), 0).toFixed(2)}` 
+                                          : 'Grátis'}
+                                    </p>
+                                  </div>
+                                  <div>
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Valor Total Estimado</p>
                                     <p className="font-black text-emerald-600 text-sm">
                                       R$ {totalValue.toFixed(2)}
@@ -2294,6 +2489,11 @@ const PublicLanding: React.FC = () => {
                                   </div>
                                 </div>
                               </div>
+                              {createdReservation.shipping_status === 'a_combinar' && (
+                                <div className="mt-4 p-3.5 bg-rose-50 border border-rose-150 rounded-xl text-[10px] text-rose-800 leading-normal font-bold">
+                                  <strong>IMPORTANTE:</strong> O CEP informado não está cadastrado na tabela de entregas padrão. O valor do frete será verificado pelo nosso suporte e combinado manualmente.
+                                </div>
+                              )}
 
                               {/* Signatures */}
                               <div className="border-t border-slate-150 pt-8 grid grid-cols-1 sm:grid-cols-2 gap-6 text-center text-[9px] font-bold text-slate-400">
@@ -2334,7 +2534,10 @@ const PublicLanding: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
-                                const message = `*PÓS LEVE - Confirmação de Reserva*%0A%0A*Voucher:* #VR-PL-${createdReservation.id.substring(0,8).toUpperCase()}%0A*Cliente:* ${bookingForm.name}%0A*CPF:* ${bookingForm.cpf}%0A*Quantidade:* ${createdReservations.length} poltrona(s)%0A*Poltronas alocadas (Patrimônio):* ${reservedPlates}%0A*Entrega:* ${new Date(bookingForm.pickupDate).toLocaleString('pt-BR')}%0A*Devolução:* ${new Date(bookingForm.returnDate).toLocaleString('pt-BR')}%0A*Valor total:* R$ ${totalValue.toFixed(2)}%0A*Caução:* R$ ${totalDeposit.toFixed(2)}%0A%0A*Confirmação de Caução:* Solicito os dados bancários para o pagamento do caução de R$ ${totalDeposit.toFixed(2)}.%0A%0A_Atenção: O contrato será assinado no ato da entrega._`;
+                                const totalShipping = createdReservations.reduce((sum, r) => sum + (r.shipping_value || 0), 0);
+                                const shippingStatus = createdReservation.shipping_status;
+                                const shippingText = shippingStatus === 'a_combinar' ? 'A combinar' : `R$ ${totalShipping.toFixed(2)}`;
+                                const message = `*PÓS LEVE - Confirmação de Reserva*%0A%0A*Voucher:* #VR-PL-${createdReservation.id.substring(0,8).toUpperCase()}%0A*Cliente:* ${bookingForm.name}%0A*CPF:* ${bookingForm.cpf}%0A*CEP:* ${bookingForm.cep}%0A*Quantidade:* ${createdReservations.length} poltrona(s)%0A*Poltronas alocadas (Patrimônio):* ${reservedPlates}%0A*Entrega:* ${new Date(bookingForm.pickupDate).toLocaleString('pt-BR')}%0A*Devolução:* ${new Date(bookingForm.returnDate).toLocaleString('pt-BR')}%0A*Frete:* ${shippingText}%0A*Valor total:* R$ ${totalValue.toFixed(2)}%0A*Caução:* R$ ${totalDeposit.toFixed(2)}%0A%0A*Confirmação de Caução:* Solicito os dados bancários para o pagamento do caução de R$ ${totalDeposit.toFixed(2)}.${shippingStatus === 'a_combinar' ? '%0A%0A_Obs: Como meu CEP não está tabelado, aguardo a confirmação do valor de entrega manual._' : ''}%0A%0A_Atenção: O contrato será assinado no ato da entrega._`;
                                 window.open(`https://wa.me/558584065904?text=${message}`, '_blank');
                               }}
                               className="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all animate-pulse"

@@ -93,11 +93,23 @@ export interface Reservation {
   actual_return_date?: string;
   return_checklist?: VehicleChecklist;
   origin?: 'painel' | 'site';
+  shipping_value?: number;
+  shipping_status?: 'definido' | 'a_combinar';
   // UI Helper fields (not in DB)
   clientName?: string;
+  clientCep?: string;
   vehicleModel?: string;
   vehiclePlate?: string;
   dateStr?: string;
+}
+
+export interface ShippingRate {
+  id: string;
+  region_name: string;
+  cep_start: string;
+  cep_end: string;
+  price: number;
+  created_at?: string;
 }
 
 export type UserRole = 'admin' | 'user';
@@ -121,4 +133,4 @@ export interface APIKey {
   last_used_at?: string;
 }
 
-export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS' | 'INTEGRATIONS' | 'SIGNATURE';
+export type View = 'LOGIN' | 'DASHBOARD' | 'CLIENTS' | 'VEHICLES' | 'RESERVATIONS' | 'SETTINGS' | 'USERS' | 'DISCOUNTS' | 'INTEGRATIONS' | 'SIGNATURE' | 'SHIPPING_RATES';

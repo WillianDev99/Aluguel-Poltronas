@@ -19,6 +19,7 @@ const ReservationsView = React.lazy(() => import('./views/ReservationsView'));
 const UsersView = React.lazy(() => import('./views/UsersView'));
 const PublicContractSignatureView = React.lazy(() => import('./views/PublicContractSignatureView'));
 const LandlordSignatureView = React.lazy(() => import('./views/LandlordSignatureView'));
+const ShippingRatesView = React.lazy(() => import('./views/ShippingRatesView'));
 // Components
 import Layout from './components/Layout';
 import VoucherModal from './components/VoucherModal';
@@ -91,6 +92,7 @@ const MainContent: React.FC = () => {
         return {
           ...r,
           clientName: client?.name || 'N/A',
+          clientCep: client?.cep || '',
           vehicleModel: vehicle?.model || 'N/A',
           vehiclePlate: vehicle?.plate || '---',
           dateStr: new Date(r.created_at).toLocaleDateString('pt-BR')
@@ -206,6 +208,7 @@ const MainContent: React.FC = () => {
                   const transformed = {
                     ...data[0],
                     clientName: client?.name || 'N/A',
+                    clientCep: client?.cep || '',
                     vehicleModel: vehicle?.model || 'N/A',
                     vehiclePlate: vehicle?.plate || '---',
                     dateStr: new Date(data[0].created_at).toLocaleDateString('pt-BR')
@@ -229,6 +232,7 @@ const MainContent: React.FC = () => {
                   const transformed = {
                     ...data[0],
                     clientName: client?.name || 'N/A',
+                    clientCep: client?.cep || '',
                     vehicleModel: vehicle?.model || 'N/A',
                     vehiclePlate: vehicle?.plate || 'N/A',
                     dateStr: new Date(data[0].created_at).toLocaleDateString('pt-BR')
@@ -245,6 +249,7 @@ const MainContent: React.FC = () => {
           } />
            <Route path="/users" element={profile?.role === 'admin' ? <UsersView /> : <Navigate to="/dashboard" replace />} />
           <Route path="/signature" element={profile?.role === 'admin' ? <LandlordSignatureView /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/shipping-rates" element={profile?.role === 'admin' ? <ShippingRatesView /> : <Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </ErrorBoundary>
@@ -269,13 +274,14 @@ const MainContent: React.FC = () => {
             if (data && data[0]) {
               const client = clients.find(c => c.id === data[0].client_id);
               const vehicle = vehicles.find(v => v.id === data[0].vehicle_id);
-              const transformed = {
+            const transformed = {
                 ...data[0],
                 clientName: client?.name || 'N/A',
+                clientCep: client?.cep || '',
                 vehicleModel: vehicle?.model || 'N/A',
                 vehiclePlate: vehicle?.plate || 'N/A',
                 dateStr: new Date(data[0].created_at).toLocaleDateString('pt-BR')
-              };
+            };
               setReservations(prev => [transformed, ...prev]);
               toast.success('Reserva confirmada!');
               setIsReservationModalOpen(false);

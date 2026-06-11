@@ -45,6 +45,7 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
   const [processingReturnRes, setProcessingReturnRes] = useState<Reservation | null>(null);
   const [viewingReportRes, setViewingReportRes] = useState<Reservation | null>(null);
   const [editingContractRes, setEditingContractRes] = useState<Reservation | null>(null);
+  const [definingShippingRes, setDefiningShippingRes] = useState<Reservation | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -181,7 +182,15 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-primary dark:text-accent-sunshine font-bold text-xs">
                               {res.clientName?.split(' ').map(n => n[0]).join('') || '?'}
                             </div>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{res.clientName}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-900 dark:text-white">{res.clientName}</span>
+                              {res.shipping_status === 'a_combinar' && (
+                                <span className="text-[9px] font-black text-rose-500 uppercase tracking-wider animate-pulse flex items-center gap-0.5 mt-0.5 animate-bounce">
+                                  <span className="material-symbols-outlined text-[10px]">local_shipping</span>
+                                  Frete a definir
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">
@@ -221,6 +230,12 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                                     <button onClick={() => { setViewingReportRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary dark:text-accent-sunshine font-bold hover:bg-primary/5 transition-colors">
                                       <span className="material-symbols-outlined text-lg">analytics</span>
                                       Relatório Vistoria
+                                    </button>
+                                  )}
+                                  {res.shipping_status === 'a_combinar' && (
+                                    <button onClick={() => { setDefiningShippingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                      <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                      Definir Frete
                                     </button>
                                   )}
                                   <button onClick={() => { setEditingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium">
@@ -362,6 +377,12 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                                     <span className="font-semibold text-slate-800 dark:text-white">R$ {res.insurance_value.toFixed(2)}</span>
                                   </div>
                                 )}
+                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                                  <span>Valor do Frete:</span>
+                                  <span className={res.shipping_status === 'a_combinar' ? 'font-bold text-rose-500 animate-pulse' : 'font-semibold text-slate-800 dark:text-white'}>
+                                    {res.shipping_status === 'a_combinar' ? 'A combinar' : `R$ ${res.shipping_value?.toFixed(2) || '0.00'}`}
+                                  </span>
+                                </div>
                                 {res.security_deposit > 0 && (
                                   <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
                                     <span>Caução de Segurança:</span>
@@ -423,7 +444,14 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                           {res.clientName?.split(' ').map(n => n[0]).join('') || '?'}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{res.clientName}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{res.clientName}</h4>
+                            {res.shipping_status === 'a_combinar' && (
+                              <span className="inline-flex items-center text-[9px] font-black text-rose-500 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider animate-pulse">
+                                Frete a definir
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500 dark:text-slate-450 truncate">{res.vehicleModel} ({res.vehiclePlate})</p>
                         </div>
                       </div>
@@ -481,6 +509,12 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                                 <button onClick={() => { setViewingReportRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary dark:text-accent-sunshine font-bold hover:bg-primary/5 transition-colors">
                                   <span className="material-symbols-outlined text-lg">analytics</span>
                                   Relatório Vistoria
+                                </button>
+                              )}
+                              {res.shipping_status === 'a_combinar' && (
+                                <button onClick={() => { setDefiningShippingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 dark:text-rose-455 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                  <span className="material-symbols-outlined text-lg">local_shipping</span>
+                                  Definir Frete
                                 </button>
                               )}
                               <button onClick={() => { setEditingRes(res); setActiveMenu(null); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium">
@@ -621,6 +655,12 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
                               <span className="font-semibold text-slate-800 dark:text-white">R$ {res.insurance_value.toFixed(2)}</span>
                             </div>
                           )}
+                          <div className="flex justify-between">
+                            <span>Frete:</span>
+                            <span className={res.shipping_status === 'a_combinar' ? 'font-bold text-rose-500 animate-pulse' : 'font-semibold text-slate-800 dark:text-white'}>
+                              {res.shipping_status === 'a_combinar' ? 'A combinar' : `R$ ${res.shipping_value?.toFixed(2) || '0.00'}`}
+                            </span>
+                          </div>
                           {res.security_deposit > 0 && (
                             <div className="flex justify-between">
                               <span>Caução Requerido:</span>
@@ -679,6 +719,13 @@ const ReservationsView: React.FC<ReservationsViewProps> = ({
         />
       )}
       {viewingReportRes && <InspectionReportModal reservation={viewingReportRes} onClose={() => setViewingReportRes(null)} />}
+      {definingShippingRes && (
+        <DefineShippingModal
+          reservation={definingShippingRes}
+          onClose={() => setDefiningShippingRes(null)}
+          onUpdate={onUpdateReservation}
+        />
+      )}
       
       {/* Carregamento seguro do editor de contrato */}
       <Suspense fallback={<div className="fixed inset-0 z-[120] bg-white/50 flex items-center justify-center"><div className="size-10 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin"></div></div>}>
@@ -1031,6 +1078,105 @@ const InspectionReportModal: React.FC<{ reservation: Reservation; onClose: () =>
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const DefineShippingModal: React.FC<{
+  reservation: Reservation;
+  onClose: () => void;
+  onUpdate: (id: string, updates: Partial<Reservation>) => Promise<void>;
+}> = ({ reservation, onClose, onUpdate }) => {
+  const [shippingValue, setShippingValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = parseFloat(shippingValue);
+    if (isNaN(value) || value < 0) {
+      toast.error('Informe um valor de frete válido.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const baseValue = (reservation.daily_rate * reservation.days) + (reservation.insurance_value || 0);
+      const newTotal = baseValue + value;
+
+      await onUpdate(reservation.id, {
+        shipping_value: value,
+        shipping_status: 'definido',
+        total_value: newTotal
+      });
+
+      toast.success('Valor do frete definido com sucesso!');
+      onClose();
+    } catch (err: any) {
+      console.error('Erro ao definir frete:', err);
+      toast.error('Erro ao definir frete: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+        <header className="px-6 py-4 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <h3 className="font-display font-black text-slate-850 dark:text-white uppercase tracking-tight flex items-center gap-2 text-sm sm:text-base">
+            <span className="material-symbols-outlined text-rose-500">local_shipping</span>
+            Definir Frete Manual
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </header>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-4 rounded-xl space-y-2 text-xs">
+            <p className="font-bold text-rose-800 dark:text-rose-450">
+              Esta reserva foi feita com um CEP não tabelado.
+            </p>
+            <div className="space-y-1 text-slate-650 dark:text-slate-400 font-semibold">
+              <p><strong>Cliente:</strong> {reservation.clientName}</p>
+              <p><strong>CEP:</strong> {reservation.clientCep || 'Não informado'}</p>
+              <p><strong>Valor Base Reserva:</strong> R$ {((reservation.daily_rate * reservation.days) + (reservation.insurance_value || 0)).toFixed(2)}</p>
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Valor do Frete (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              autoFocus
+              className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+              value={shippingValue}
+              onChange={e => setShippingValue(e.target.value)}
+              placeholder="0,00"
+              min="0"
+            />
+          </div>
+
+          <footer className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs uppercase"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-primary hover:brightness-110 text-white font-bold rounded-xl text-xs uppercase flex items-center gap-1 shadow-md disabled:opacity-50"
+            >
+              {isSubmitting && <span className="animate-spin material-symbols-outlined text-xs">progress_activity</span>}
+              Confirmar Frete
+            </button>
+          </footer>
+        </form>
       </div>
     </div>
   );

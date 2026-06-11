@@ -67,7 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
 
     const list: Array<{
       id: string;
-      type: 'new_site_req' | 'pending_deposit' | 'collect_tomorrow' | 'collect_overdue';
+      type: 'new_site_req' | 'pending_deposit' | 'collect_tomorrow' | 'collect_overdue' | 'pending_shipping';
       title: string;
       description: string;
       timeLabel?: string;
@@ -85,6 +85,20 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
       }
 
       const isAwaitingOrInUse = r.status === 'aguardando retirada' || r.status === 'locação em uso';
+
+      // Type 5: Frete Pendente (a combinar)
+      if (isAwaitingOrInUse && r.shipping_status === 'a_combinar') {
+        list.push({
+          id: `pending-shipping-${r.id}`,
+          type: 'pending_shipping',
+          title: 'Frete Pendente 🚚',
+          description: `${r.clientName} - CEP: ${r.clientCep || ''} (Definir valor de frete)`,
+          timeLabel: 'Requer definição manual',
+          reservation: r,
+          color: 'text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/30',
+          icon: 'local_shipping',
+        });
+      }
 
       // Type 4: Coleta Atrasada (Vencida)
       if (isAwaitingOrInUse && returnDateOnly && returnDateOnly.getTime() < todayOnly.getTime()) {
@@ -155,15 +169,16 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
 
     const priority = {
       collect_overdue: 0,
-      pending_deposit: 1,
-      new_site_req: 2,
-      collect_tomorrow: 3
+      pending_shipping: 1,
+      pending_deposit: 2,
+      new_site_req: 3,
+      collect_tomorrow: 4
     };
     list.sort((a, b) => priority[a.type] - priority[b.type]);
 
     return list.map(item => ({
       ...item,
-      isRead: item.type === 'pending_deposit' ? false : acknowledgedIds.includes(item.id)
+      isRead: (item.type === 'pending_deposit' || item.type === 'pending_shipping') ? false : acknowledgedIds.includes(item.id)
     }));
   }, [reservations, acknowledgedIds]);
 
@@ -177,6 +192,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
     { id: 'VEHICLES', path: '/vehicles', label: 'Poltronas', icon: 'chair', roles: ['admin', 'user'] },
     { id: 'RESERVATIONS', path: '/reservations', label: 'Reservas', icon: 'calendar_today', roles: ['admin', 'user'] },
     { id: 'SIGNATURE', path: '/signature', label: 'Assinatura Locador', icon: 'history_edu', roles: ['admin'] },
+    { id: 'SHIPPING_RATES', path: '/shipping-rates', label: 'Tabela de Fretes', icon: 'local_shipping', roles: ['admin'] },
     { id: 'USERS', path: '/users', label: 'Usuários', icon: 'manage_accounts', roles: ['admin'] },
   ];
 
@@ -330,6 +346,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                           ? (item.type === 'collect_overdue' ? 'border-l-4 border-rose-500' :
                              item.type === 'collect_tomorrow' ? 'border-l-4 border-amber-500' :
                              item.type === 'new_site_req' ? 'border-l-4 border-emerald-500' :
+                             item.type === 'pending_shipping' ? 'border-l-4 border-rose-500' :
                              'border-l-4 border-sky-500')
                           : 'border-l-4 border-transparent';
 
@@ -337,6 +354,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                           ? (item.type === 'collect_overdue' ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10 dark:hover:bg-rose-500/15' :
                              item.type === 'collect_tomorrow' ? 'bg-amber-500/5 dark:bg-amber-500/10 hover:bg-amber-500/10 dark:hover:bg-amber-500/15' :
                              item.type === 'new_site_req' ? 'bg-emerald-500/5 dark:bg-emerald-500/10 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15' :
+                             item.type === 'pending_shipping' ? 'bg-rose-500/5 dark:bg-rose-500/10 hover:bg-rose-500/10 dark:hover:bg-rose-500/15' :
                              'bg-sky-500/5 dark:bg-sky-500/10 hover:bg-sky-500/10 dark:hover:bg-sky-500/15')
                           : 'opacity-65 hover:bg-slate-50 dark:hover:bg-slate-800/30';
 
@@ -344,7 +362,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                           <div 
                             key={item.id}
                             onClick={() => {
-                              if (item.type !== 'pending_deposit') {
+                              if (item.type !== 'pending_deposit' && item.type !== 'pending_shipping') {
                                 handleAcknowledge(item.id);
                               }
                               navigate('/reservations');
@@ -366,7 +384,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                                 {item.description}
                               </p>
                               <div className="flex justify-between items-center mt-2">
-                                {item.type !== 'pending_deposit' ? (
+                                {item.type !== 'pending_deposit' && item.type !== 'pending_shipping' ? (
                                   !item.isRead ? (
                                     <button
                                       onClick={(e) => handleAcknowledge(item.id, e)}
@@ -383,9 +401,15 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, isDarkMode, toggleD
                                     </span>
                                   )
                                 ) : (
-                                  <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-0.5 bg-sky-500/10 px-2 py-0.5 rounded-md">
-                                    <span className="material-symbols-outlined text-[12px]">hourglass_empty</span>
-                                    Aguardando pagamento
+                                  <span className={`text-[10px] font-semibold flex items-center gap-0.5 px-2 py-0.5 rounded-md ${
+                                    item.type === 'pending_shipping' 
+                                      ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10' 
+                                      : 'text-sky-600 dark:text-sky-400 bg-sky-500/10'
+                                  }`}>
+                                    <span className="material-symbols-outlined text-[12px]">
+                                      {item.type === 'pending_shipping' ? 'local_shipping' : 'hourglass_empty'}
+                                    </span>
+                                    {item.type === 'pending_shipping' ? 'Definir frete manual' : 'Aguardando pagamento'}
                                   </span>
                                 )}
                               </div>
