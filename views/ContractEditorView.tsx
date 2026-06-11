@@ -219,7 +219,10 @@ const ContractEditorView: React.FC<ContractEditorViewProps> = ({ reservation, cl
             const content = editorRef.current.innerHTML;
             const { error } = await supabase
                 .from('rental_contracts')
-                .upsert({ rental_id: reservation.id, content, status: 'pendente' });
+                .upsert(
+                    { rental_id: reservation.id, content, status: 'pendente' },
+                    { onConflict: 'rental_id' }
+                );
             if (error) throw error;
 
             if (sendEmail && client?.email) {
